@@ -1,15 +1,14 @@
 <?php
 // pages/all_orders.php
 require_once '../php/check_session.php';
-// สมมติว่าผู้ที่ดูได้ต้องเป็นระดับที่จัดการได้
+// สิทธิ์ที่ต้องการสำหรับหน้านี้ยังคงเดิม
 require_login([2, 3, 4]);
 
 require_once '../php/db_connect.php';
 
-// กำหนด BASE_URL (เพื่อให้ path ถูกต้องเสมอเมื่อเรียกจาก /pages/)
+// กำหนด BASE_URL
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
 $project_folder = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-// เราอยู่ใน /pages ดังนั้นต้องเอา /pages ออกจาก path
 $base_project_folder = str_replace('/pages', '', $project_folder);
 define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . $base_project_folder . '/');
 
@@ -67,6 +66,13 @@ $where_clauses = [];
 $params = []; 
 $param_types = ""; 
 
+// *** เพิ่มส่วนนี้: กรองข้อมูลตามสาขาของผู้ใช้ ***
+if (isset($_SESSION['role_level']) && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned_transport_origin_id'])) {
+    $where_clauses[] = "o.transport_origin_id = ?";
+    $params[] = $_SESSION['assigned_transport_origin_id'];
+    $param_types .= "i";
+}
+
 $query_string_params = [];
 if (!empty($search_term)) {
     $where_clauses[] = "(CAST(o.order_id AS CHAR) LIKE ? OR o.cssale_docno LIKE ? OR cs.custname LIKE ?)";
@@ -81,7 +87,8 @@ if (!empty($filter_status)) {
 if (!empty($filter_priority)) {
     $where_clauses[] = "o.priority = ?"; $params[] = $filter_priority; $param_types .= "s"; $query_string_params['filter_priority'] = $filter_priority;
 }
-if (!empty($filter_transport_origin)) {
+// การกรองตามสาขาจากฟอร์ม จะทำงานได้สำหรับ Admin เท่านั้น เพราะถ้าไม่ใช่ Admin จะถูกบังคับกรองตามสาขาตัวเองไปแล้ว
+if (isset($_SESSION['role_level']) && $_SESSION['role_level'] == 4 && !empty($filter_transport_origin)) {
     $where_clauses[] = "o.transport_origin_id = ?"; $params[] = $filter_transport_origin; $param_types .= "i"; $query_string_params['filter_transport_origin'] = $filter_transport_origin;
 }
 if (!empty($filter_date_start)) {
@@ -197,7 +204,7 @@ if ($is_ajax_request) {
             <h2 class="mb-0">รายการใบสั่งซื้อทั้งหมด</h2>
             <a href="<?php echo BASE_URL; ?>index.php" class="btn btn-secondary"><i class="fas fa-arrow-left mr-2"></i>กลับหน้าหลัก</a>
         </div>
-        
+
         <form id="filterForm" method="GET" action="all_orders.php" class="filter-form mb-4 p-3 border rounded bg-light">
             <div class="form-row">
                 <div class="form-group col-md-3">
@@ -216,12 +223,15 @@ if ($is_ajax_request) {
                          <?php echo $priority_options_filter; ?>
                     </select>
                 </div>
+                <!-- *** เพิ่มส่วนนี้: ซ่อน/แสดง filter สาขาสำหรับ Admin *** -->
+                <?php if (isset($_SESSION['role_level']) && $_SESSION['role_level'] == 4): ?>
                 <div class="form-group col-md-2">
                     <label for="filter_transport_origin">ต้นทางขนส่ง:</label>
                     <select class="form-control form-control-sm select2-filter" id="filter_transport_origin" name="filter_transport_origin">
                         <?php echo $transport_origin_options_filter; ?>
                     </select>
                 </div>
+                <?php endif; ?>
             </div>
             <div class="form-row">
                  <div class="form-group col-md-3">
@@ -247,7 +257,7 @@ if ($is_ajax_request) {
             <table class="table table-bordered table-hover table-striped">
                 <thead class="thead-light">
                     <tr>
-                        <th>ID</th><th>เลขที่บิล</th><th>ลูกค้า</th><th>ที่อยู่</th><th>หมายเหตุ</th>
+                        <th>เลขที่บิล</th><th>ลูกค้า</th><th>ที่อยู่</th><th>สินค้า</th>
                         <th>ต้นทาง</th><th>คนส่ง</th><th>รถ</th><th>วันที่สั่ง</th>
                         <th>ความเร่งด่วน</th><th>สถานะ</th><th>อัปเดตล่าสุด</th>
                     </tr>
@@ -260,7 +270,6 @@ if ($is_ajax_request) {
                                 $priority_class = 'priority-' . str_replace(' ', '-', htmlspecialchars($row['priority']));
                             ?>
                             <tr id="order-row-<?php echo htmlspecialchars($row['order_id']); ?>" class="<?php echo $status_class; ?>">
-                                <td><?php echo htmlspecialchars($row['order_id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['cssale_docno']); ?></td>
                                 <td><?php echo htmlspecialchars($row['custname']); ?></td>
                                 <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?php echo $row['customer_display_address']; ?>"><?php echo $row['customer_display_address']; ?></td>

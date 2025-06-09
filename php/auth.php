@@ -13,27 +13,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    $sql = "SELECT user_id, username, password_hash, full_name, role_level FROM users WHERE username = ?";
+    // ตรวจสอบให้แน่ใจว่าดึงคอลัมน์ assigned_transport_origin_id มาด้วย
+    $sql = "SELECT user_id, username, password_hash, full_name, role_level, assigned_transport_origin_id FROM users WHERE username = ?";
     $stmt = $conn->prepare($sql);
+    
+    if ($stmt === false) {
+        // Handle SQL prepare error
+        error_log("SQL prepare failed: " . $conn->error);
+        $_SESSION['login_error'] = "เกิดข้อผิดพลาดในระบบ";
+        header("Location: ../login.php");
+        exit();
+    }
+
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows === 1) {
         $user = $result->fetch_assoc();
-        // ตรวจสอบรหัสผ่านที่ hash ไว้
+        
         if (password_verify($password, $user['password_hash'])) {
             // รหัสผ่านถูกต้อง, สร้าง session
-            session_regenerate_id(); // ป้องกัน session fixation
+            session_regenerate_id(true); // ป้องกัน session fixation
+            
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['role_level'] = (int)$user['role_level'];
+            // เก็บ ID สาขาของผู้ใช้ไว้ใน session
+            // ใช้ (int) หรือปล่อยเป็น NULL ถ้าค่าใน DB เป็น NULL
+            $_SESSION['assigned_transport_origin_id'] = $user['assigned_transport_origin_id'] ? (int)$user['assigned_transport_origin_id'] : null;
             
-            // ลบ session error เก่า (ถ้ามี)
             unset($_SESSION['login_error']);
-
-            // ไปยังหน้า Dashboard
             header("Location: ../index.php");
             exit();
         }
@@ -45,7 +56,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     exit();
 
 } else {
-    // ถ้าไม่ได้เข้ามาด้วย POST method
     header("Location: ../login.php");
     exit();
 }
