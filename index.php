@@ -225,6 +225,11 @@ $conn->close();
         <?php if(is_logged_in()): ?>
             <h3 class="section-title mt-4">เมนูลัด</h3>
             <div class="row quick-actions">
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                    <a href="<?php echo BASE_URL; ?>pages/price_checker.php" class="btn btn-outline-danger btn-block">
+                        <i class="fas fa-search-dollar mr-1"></i>เช็คราคา
+                    </a>
+                </div>
                 <?php if (has_role([1, 4])): ?>
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
                     <a href="<?php echo BASE_URL; ?>pages/add_order_form.php" class="btn btn-primary btn-block"><i class="fas fa-plus-circle mr-1"></i>เพิ่มรายการ</a>
