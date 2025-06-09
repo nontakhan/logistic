@@ -1,8 +1,8 @@
 <?php
 // php/db_connect.php
-$servername = "localhost";
-$username = "root";
-$password = "";
+$servername = "10.10.202.156";
+$username = "nr";
+$password = "P@ssw0rd";
 $dbname = "logistic"; // หรือชื่อฐานข้อมูลที่คุณใช้
 
 $conn = new mysqli($servername, $username, $password, $dbname);
