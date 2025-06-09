@@ -19,10 +19,11 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
         if ($result->num_rows > 0) {
             $data = $result->fetch_assoc();
             
-            $full_address = implode(' ', array_filter([ // สร้างที่อยู่เต็มเพื่อส่งกลับ
-                'ต.' . $data['tambon'],
-                'อ.' . $data['amphoe'],
-                'จ.' . $data['province']
+            // แก้ไข: สร้างที่อยู่เต็มโดยไม่เติมคำนำหน้าซ้ำ
+            $full_address = implode(' ', array_filter([
+                $data['tambon'],
+                $data['amphoe'],
+                $data['province']
             ]));
 
             $response = [
