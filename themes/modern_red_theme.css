@@ -1,0 +1,238 @@
+/* themes/modern_red_theme.css */
+
+/* --- Variables (Optional, but good for consistency) --- */
+:root {
+    --primary-red: #E74C3C; /* สีแดงหลัก (สดใส) */
+    --primary-red-darker: #C0392B; /* สีแดงเข้มขึ้น */
+    --primary-red-lighter: #f5b7b1; /* สีแดงอ่อน */
+    
+    --text-dark: #343A40;
+    --text-light: #FFFFFF;
+    --text-muted: #6c757d;
+
+    --bg-light: #F8F9FA; /* สีพื้นหลังหลัก */
+    --bg-white: #FFFFFF;
+
+    --border-color: #DEE2E6;
+    --border-radius-base: 0.35rem; /* ปรับค่าความโค้งมน */
+
+    --font-family-sans-serif: 'Sarabun', sans-serif; /* หรือ 'Kanit', 'Prompt' */
+}
+
+/* --- General Styles --- */
+body {
+    font-family: var(--font-family-sans-serif);
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-dark);
+    font-weight: 600; /* หรือ 700 สำหรับความหนาที่มากขึ้น */
+}
+
+a {
+    color: var(--primary-red);
+    text-decoration: none;
+}
+a:hover {
+    color: var(--primary-red-darker);
+    text-decoration: underline;
+}
+
+/* --- Container & Card Styles --- */
+.container, .container-fluid {
+    background-color: var(--bg-white);
+    padding: 25px 30px; /* ปรับ padding */
+    border-radius: var(--border-radius-base);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* ปรับเงาให้ดูนุ่มนวลขึ้น */
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+/* --- Form Styles --- */
+.form-control {
+    border-radius: var(--border-radius-base);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 0.75rem; /* ปรับ padding ของ input */
+}
+.form-control:focus {
+    border-color: var(--primary-red-lighter);
+    box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.25); /* เงาเมื่อ focus เป็นสีแดงอ่อน */
+}
+.form-group label {
+    font-weight: 500; /* ปรับความหนาของ label */
+    margin-bottom: 0.3rem;
+    color: var(--text-dark);
+}
+
+/* Select2 Customization to match theme */
+.select2-container--default .select2-selection--single {
+    border-radius: var(--border-radius-base) !important;
+    border: 1px solid var(--border-color) !important;
+    height: calc(1.5em + 1rem + 2px) !important; /* ปรับความสูงให้สอดคล้องกับ input */
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: calc(1.5em + 1rem) !important;
+    padding-left: 0.75rem !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: calc(1.5em + 1rem) !important;
+}
+.select2-dropdown {
+    border-radius: var(--border-radius-base) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: var(--primary-red) !important;
+    color: var(--text-light) !important;
+}
+
+/* --- Button Styles --- */
+.btn {
+    border-radius: var(--border-radius-base);
+    padding: 0.5rem 1rem; /* ปรับ padding ของปุ่ม */
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-primary {
+    background-color: var(--primary-red);
+    border-color: var(--primary-red);
+    color: var(--text-light);
+}
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--primary-red-darker);
+    border-color: var(--primary-red-darker);
+    color: var(--text-light);
+    box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.35);
+}
+
+.btn-secondary {
+    background-color: #6c757d; /* สีเทามาตรฐานของ Bootstrap */
+    border-color: #6c757d;
+    color: var(--text-light);
+}
+.btn-secondary:hover, .btn-secondary:focus {
+    background-color: #5a6268;
+    border-color: #545b62;
+    color: var(--text-light);
+}
+
+.btn-success { /* ปรับสีปุ่ม success ให้เข้ากับธีม หรือใช้สีเขียวที่ดูดี */
+    background-color: #28a745; /* สีเขียวมาตรฐาน */
+    border-color: #28a745;
+}
+.btn-success:hover { background-color: #218838; border-color: #1e7e34; }
+
+.btn-warning { /* ปรับสีปุ่ม warning */
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: var(--text-dark);
+}
+.btn-warning:hover { background-color: #e0a800; border-color: #d39e00; color: var(--text-dark); }
+
+.btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+.btn-info:hover { background-color: #138496; border-color: #117a8b; }
+
+/* --- Table Styles --- */
+.table thead th {
+    background-color: var(--bg-light); /* พื้นหลัง header ตาราง */
+    color: var(--text-dark);
+    font-weight: 600;
+    border-bottom-width: 2px; /* เส้นใต้ header หนาขึ้น */
+    border-color: var(--border-color);
+}
+.table-hover tbody tr:hover {
+    background-color: #f1f3f5; /* สีอ่อนๆ เมื่อ hover แถว */
+}
+.table td, .table th {
+    border-color: var(--border-color); /* สีเส้นขอบของตาราง */
+}
+
+/* --- Status & Priority Specific Styles --- */
+.status-รอรับเรื่อง { background-color: #fff0f0; color: var(--primary-red-darker); border-left: 3px solid var(--primary-red-darker); }
+.status-รับเรื่อง { background-color: #e6fff0; color: #28a745; border-left: 3px solid #28a745; }
+.status-รอส่งของ { background-color: #e3f2fd; color: #007bff; border-left: 3px solid #007bff; }
+.status-ส่งของแล้ว { background-color: #e8f5e9; color: #155724; font-weight: bold; border-left: 3px solid #155724;}
+.status-ยกเลิก {
+    background-color: #f8f9fa !important; /* สีเทาอ่อน */
+    color: #6c757d; /* สีเทาเข้ม */
+    text-decoration: line-through; /* ขีดฆ่า */
+}
+.status-ยกเลิก a, .status-ยกเลิก button {
+    pointer-events: none; /* ทำให้ปุ่มหรือลิงก์ในแถวนั้นกดไม่ได้ */
+    opacity: 0.65;
+}
+
+.priority-ด่วนที่สุด { color: var(--primary-red-darker); font-weight: bold; }
+.priority-ด่วน { color: #fd7e14; font-weight: bold; } /* สีส้มสำหรับ 'ด่วน' */
+.priority-ปกติ { color: var(--text-muted); }
+
+/* --- Modal Styles --- */
+.modal-content {
+    border-radius: var(--border-radius-base);
+    border: none;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+.modal-header {
+    background-color: var(--primary-red);
+    color: var(--text-light);
+    border-bottom: none;
+    border-top-left-radius: var(--border-radius-base);
+    border-top-right-radius: var(--border-radius-base);
+}
+.modal-header .close {
+    color: var(--text-light);
+    opacity: 0.8;
+}
+.modal-header .close:hover {
+    opacity: 1;
+}
+.modal-title {
+    font-weight: 500;
+}
+
+/* --- Pagination Styles --- */
+.pagination .page-item.active .page-link {
+    background-color: var(--primary-red);
+    border-color: var(--primary-red);
+    color: var(--text-light);
+}
+.pagination .page-link {
+    color: var(--primary-red);
+    border-radius: var(--border-radius-base); /* ทำให้ปุ่ม pagination โค้งมน */
+    margin: 0 2px; /* เพิ่มระยะห่างระหว่างปุ่ม */
+}
+.pagination .page-link:hover {
+    background-color: var(--primary-red-lighter);
+    border-color: var(--primary-red-lighter);
+    color: var(--primary-red-darker);
+}
+.pagination .page-item.disabled .page-link {
+    color: var(--text-muted);
+    background-color: transparent;
+    border-color: var(--border-color);
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 767.98px) {
+    .container, .container-fluid {
+        padding: 15px;
+    }
+    h2 {
+        font-size: 1.5rem; /* ลดขนาด h2 บนมือถือ */
+    }
+    .filter-form .form-row .form-group {
+        margin-bottom: 0.75rem; /* เพิ่มระยะห่างของ filter บนมือถือ */
+    }
+    .table th, .table td {
+        font-size: 0.8rem; /* ลดขนาดฟอนต์ในตารางบนมือถือ */
+        padding: 0.5rem 0.4rem; /* ลด padding */
+    }
+}
