@@ -20,9 +20,23 @@ $items_per_page = 20;
 $current_page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($current_page - 1) * $items_per_page;
 
+// --- ดึงข้อมูลสำหรับ Filters ---
+// *** เพิ่ม: ดึงข้อมูลพนักงานขายสำหรับ Dropdown ***
+$salesman_options_filter = "<option value=''>พนักงานขายทั้งหมด</option>";
+$sql_salesman_filter = "SELECT code, lname FROM csuser WHERE lname IS NOT NULL AND lname != '' ORDER BY lname ASC";
+$result_salesman_filter = $conn->query($sql_salesman_filter);
+if ($result_salesman_filter && $result_salesman_filter->num_rows > 0) {
+    while($row = $result_salesman_filter->fetch_assoc()) {
+        $selected_salesman = (isset($_GET['filter_salesman']) && $_GET['filter_salesman'] == $row['code']) ? 'selected' : '';
+        $salesman_options_filter .= "<option value='" . htmlspecialchars($row['code']) . "' $selected_salesman>" . htmlspecialchars($row['code'] . ' - ' . $row['lname']) . "</option>";
+    }
+}
+
+
 // --- จัดการการค้นหาและกรอง ---
 $search_term = isset($_GET['search_term']) ? trim($conn->real_escape_string($_GET['search_term'])) : '';
 $filter_status = isset($_GET['filter_status']) ? $conn->real_escape_string($_GET['filter_status']) : '';
+$filter_salesman = isset($_GET['filter_salesman']) ? $conn->real_escape_string($_GET['filter_salesman']) : ''; // รับค่า filter พนักงานขาย
 $filter_date_start = isset($_GET['filter_date_start']) && !empty($_GET['filter_date_start']) ? $conn->real_escape_string($_GET['filter_date_start']) : '';
 $filter_date_end = isset($_GET['filter_date_end']) && !empty($_GET['filter_date_end']) ? $conn->real_escape_string($_GET['filter_date_end']) : '';
 
@@ -40,7 +54,6 @@ if (is_logged_in() && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned
 // สร้าง query string สำหรับ pagination links
 $query_string_params = [];
 if (!empty($search_term)) {
-    // *** แก้ไข: ค้นหาจากเลขที่บิลและชื่อลูกค้าเท่านั้น ***
     $where_clauses[] = "(o.cssale_docno LIKE ? OR cs.custname LIKE ?)";
     $search_like = "%" . $search_term . "%";
     array_push($params, $search_like, $search_like);
@@ -52,6 +65,13 @@ if (!empty($filter_status)) {
     $params[] = $filter_status; 
     $param_types .= "s"; 
     $query_string_params['filter_status'] = $filter_status;
+}
+// *** เพิ่ม: เงื่อนไขการกรองตามพนักงานขาย ***
+if (!empty($filter_salesman)) {
+    $where_clauses[] = "cs.saleman = ?"; 
+    $params[] = $filter_salesman; 
+    $param_types .= "s"; 
+    $query_string_params['filter_salesman'] = $filter_salesman;
 }
 if (!empty($filter_date_start)) {
     $where_clauses[] = "DATE(o.updated_at) >= ?";
@@ -87,12 +107,14 @@ $total_pages = ceil($total_items / $items_per_page);
 $stmt_count->close();
 
 // --- Fetch data for the current page ---
+// *** เพิ่ม: JOIN กับ csuser และเลือก salesman_name (lname) ***
 $sql_data_base = "SELECT 
                     o.order_id, o.cssale_docno, cs.custname, cs.shipaddr, o.status, o.updated_at,
                     t_org.origin_name AS transport_origin_name,
-                    s.staff_name AS assigned_staff_name
+                    cu.lname AS salesman_name
                 FROM orders o
                 LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci
+                LEFT JOIN csuser cu ON cs.salesman = cu.code
                 LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id
                 LEFT JOIN staff s ON o.assigned_staff_id = s.staff_id";
 $sql_data_final = $sql_data_base . $sql_where . " ORDER BY o.updated_at DESC LIMIT ? OFFSET ?";
@@ -169,17 +191,19 @@ if ($is_ajax_request) {
 
         <form id="filterForm" class="filter-form mb-4 p-3 border rounded bg-light">
             <div class="form-row">
-                <div class="form-group col-md-5">
+                <div class="form-group col-md-4">
                     <label for="search_term">ค้นหา</label>
                     <input type="text" class="form-control" id="search_term" name="search_term" value="<?php echo htmlspecialchars($search_term); ?>" placeholder="ค้นหาจากเลขที่บิล หรือ ชื่อลูกค้า...">
                 </div>
                 <div class="form-group col-md-3">
+                    <label for="filter_salesman">พนักงานขาย</label>
+                    <select class="form-control select2-filter" id="filter_salesman" name="filter_salesman">
+                        <?php echo $salesman_options_filter; ?>
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
                     <label for="filter_date_start">อัปเดตจากวันที่</label>
                     <input type="date" class="form-control" id="filter_date_start" name="filter_date_start" value="<?php echo htmlspecialchars($filter_date_start); ?>">
-                </div>
-                <div class="form-group col-md-2">
-                    <label for="filter_date_end">ถึงวันที่</label>
-                    <input type="date" class="form-control" id="filter_date_end" name="filter_date_end" value="<?php echo htmlspecialchars($filter_date_end); ?>">
                 </div>
                 <div class="form-group col-md-2">
                     <label for="filter_status">สถานะ</label>
@@ -206,6 +230,7 @@ if ($is_ajax_request) {
                     <tr>
                         <th>เลขที่บิล</th>
                         <th>ชื่อลูกค้า</th>
+                        <th>พนักงานขาย</th> <!-- เพิ่ม Header -->
                         <th>ต้นทางขนส่ง</th>
                         <th>สถานที่ส่ง</th>
                         <th class="text-center">สถานะ</th>
@@ -230,7 +255,9 @@ if ($is_ajax_request) {
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
-            $('.select2-filter').select2({ minimumResultsForSearch: Infinity });
+            $('.select2-filter').select2({
+                 // allowClear: true ถ้าต้องการให้มีปุ่ม x
+            });
 
             function renderStatusBadge(status) {
                 let badgeClass = 'badge-light-secondary';
@@ -251,6 +278,7 @@ if ($is_ajax_request) {
                     <tr class="${statusClass}">
                         <td><strong>${row.cssale_docno || '-'}</strong></td>
                         <td>${row.custname || '-'}</td>
+                        <td>${row.salesman_name || '-'}</td>
                         <td>${row.transport_origin_name || '-'}</td>
                         <td>${row.shipaddr || '-'}</td>
                         <td class="text-center">${renderStatusBadge(row.status)}</td>
@@ -298,13 +326,13 @@ if ($is_ajax_request) {
                         if (response.orders && response.orders.length > 0) {
                             response.orders.forEach(row => $('#ordersTableBody').append(buildTableRow(row)));
                         } else {
-                            $('#ordersTableBody').append('<tr><td colspan="6" class="text-center py-5">ไม่พบข้อมูลตามเงื่อนไขที่ระบุ</td></tr>');
+                            $('#ordersTableBody').append('<tr><td colspan="7" class="text-center py-5">ไม่พบข้อมูลตามเงื่อนไขที่ระบุ</td></tr>');
                         }
                         $('#items-count-info').html(`<small>พบทั้งหมด ${response.total_items} รายการ (หน้า ${response.current_page} จาก ${response.total_pages})</small>`);
                         renderPagination(response.total_pages, response.current_page);
                     },
                     error: function() {
-                        $('#ordersTableBody').html('<tr><td colspan="6" class="text-center py-5 text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>');
+                        $('#ordersTableBody').html('<tr><td colspan="7" class="text-center py-5 text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>');
                     },
                     complete: function() {
                         $('.loading-overlay').hide();
