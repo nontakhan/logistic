@@ -12,7 +12,7 @@ $project_folder = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 $base_project_folder = str_replace('/pages', '', $project_folder);
 define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . $base_project_folder . '/');
 
-// *** แก้ไข: เพิ่ม COLLATE utf8mb4_unicode_ci เพื่อแก้ปัญหา Collation Mismatch ***
+// SQL query เพื่อกรองบิลที่ยังไม่ได้เพิ่มเข้าระบบ
 $cssale_options = "";
 $sql_cssale = "SELECT cs.docno, cs.custname 
                FROM cssale cs
@@ -21,13 +21,9 @@ $sql_cssale = "SELECT cs.docno, cs.custname
                ORDER BY cs.docdate DESC, cs.docno DESC 
                LIMIT 200";
 $result_cssale = $conn->query($sql_cssale);
-if ($result_cssale === false) {
-    // สำหรับ Debug: แสดง error ถ้า query ผิดพลาด
-    // die("SQL Error in add_order_form.php: " . $conn->error);
-}
+
 if ($result_cssale && $result_cssale->num_rows > 0) { while($row = $result_cssale->fetch_assoc()) { $cssale_options .= "<option value='" . htmlspecialchars($row['docno']) . "'>" . htmlspecialchars($row['docno'] . ' - ' . $row['custname']) . "</option>"; } }
 
-// *** แก้ไข: ปรับปรุง SQL query เพื่อเรียงลำดับที่อยู่ใหม่ ***
 $origin_options = "";
 $sql_origin = "SELECT id, CONCAT_WS(' ', mooban, moo, tambon, amphoe, province) AS full_address FROM origin ORDER BY province, amphoe, tambon, mooban";
 $result_origin = $conn->query($sql_origin);
@@ -82,7 +78,6 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
                     </select>
                 </div>
             </div>
-
             <div id="bill-details-container" class="mt-2 mb-3 p-3 rounded bill-info-box" style="display: none;">
                 <h6>ข้อมูลจากบิล</h6>
                 <div class="row">
@@ -96,7 +91,6 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
                     </div>
                 </div>
             </div>
-
             <div class="form-row">
                 <div class="form-group col-md-6">
                     <label for="transport_origin_id">ต้นทางขนส่ง:</label>
@@ -114,12 +108,10 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
                     </select>
                 </div>
             </div>
-
             <div class="form-group">
                 <label for="product_details">หมายเหตุ:</label>
                 <textarea class="form-control" id="product_details" name="product_details" rows="3"></textarea>
             </div>
-            
             <button type="submit" class="btn btn-primary">บันทึกรายการ</button>
         </form>
     </div>
@@ -128,34 +120,28 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="<?php echo BASE_URL; ?>js/script.js?v=1.1"></script>
+    <script src="<?php echo BASE_URL; ?>js/script.js?v=1.2"></script> <!-- อัปเดตเวอร์ชันเล็กน้อย -->
     <script>
         $(document).ready(function() {
             $('.select2-basic').select2({
                 placeholder: "-- กรุณาเลือก --",
                 allowClear: true
             });
-
             function getBaseUrl() {
                 return "<?php echo BASE_URL; ?>";
             }
-
             $('#cssale_docno').on('change', function() {
                 const selectedDocNo = $(this).val();
                 const detailsContainer = $('#bill-details-container');
-
                 if (selectedDocNo) {
                     $('#display-custname').text('กำลังโหลด...');
                     $('#display-shipaddr').text('กำลังโหลด...');
                     $('#display-docdate').text('กำลังโหลด...');
                     $('#display-salesman').text('กำลังโหลด...');
                     detailsContainer.slideDown();
-
                     $.ajax({
                         url: getBaseUrl() + 'php/get_cs_sale_details.php',
-                        type: 'GET',
-                        data: { docno: selectedDocNo },
-                        dataType: 'json',
+                        type: 'GET', data: { docno: selectedDocNo }, dataType: 'json',
                         success: function(response) {
                             if (response.status === 'success') {
                                 $('#display-custname').text(response.custname || '-');

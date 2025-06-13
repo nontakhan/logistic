@@ -21,11 +21,6 @@ $(document).ready(function() {
                 errorMessagesHtml += "<li>กรุณาเลือกต้นทางขนส่ง</li>";
                 isValid = false;
             }
-            // แก้ไข: ลบการตรวจสอบช่องหมายเหตุ (product_details) ออกจากส่วนนี้
-            // if ($('#product_details').val().trim() === "") {
-            //     errorMessagesHtml += "<li>กรุณากรอกหมายเหตุ</li>";
-            //     isValid = false;
-            // }
              if ($('#priority').val() === "") {
                 errorMessagesHtml += "<li>กรุณาเลือกความเร่งด่วน</li>";
                 isValid = false;
@@ -63,12 +58,11 @@ $(document).ready(function() {
                             icon: 'success',
                             title: 'สำเร็จ!',
                             text: response.message,
-                            timer: 2000, 
+                            timer: 1500, // แสดงผล 1.5 วินาทีก่อน reload
                             showConfirmButton: false
                         }).then(() => {
-                            $('#addOrderForm')[0].reset(); 
-                            $('.select2-basic').val(null).trigger('change'); // ล้างค่า Select2
-                            $('#bill-details-container').slideUp(); // ซ่อนกล่องข้อมูลบิล
+                            // *** แก้ไข: เปลี่ยนเป็น reload หน้าเพื่ออัปเดตรายการบิล ***
+                            location.reload(); 
                         });
                     } else {
                         let serverErrorMessagesHtml = response.message; 
