@@ -27,8 +27,9 @@ if ($result_cssale === false) {
 }
 if ($result_cssale && $result_cssale->num_rows > 0) { while($row = $result_cssale->fetch_assoc()) { $cssale_options .= "<option value='" . htmlspecialchars($row['docno']) . "'>" . htmlspecialchars($row['docno'] . ' - ' . $row['custname']) . "</option>"; } }
 
+// *** แก้ไข: ปรับปรุง SQL query เพื่อเรียงลำดับที่อยู่ใหม่ ***
 $origin_options = "";
-$sql_origin = "SELECT id, CONCAT_WS(' ', tambon, amphoe, province, CONCAT('(หมู่: ', mooban, ')')) AS full_address FROM origin ORDER BY province, amphoe, tambon, mooban";
+$sql_origin = "SELECT id, CONCAT_WS(' ', mooban, moo, tambon, amphoe, province) AS full_address FROM origin ORDER BY province, amphoe, tambon, mooban";
 $result_origin = $conn->query($sql_origin);
 if ($result_origin && $result_origin->num_rows > 0) { while($row = $result_origin->fetch_assoc()) { $origin_options .= "<option value='" . htmlspecialchars($row['id']) . "'>" . htmlspecialchars($row['full_address']) . "</option>"; } }
 
