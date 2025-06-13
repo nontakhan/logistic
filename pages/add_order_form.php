@@ -12,14 +12,26 @@ $project_folder = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 $base_project_folder = str_replace('/pages', '', $project_folder);
 define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . $base_project_folder . '/');
 
+// *** แก้ไข: เพิ่ม COLLATE utf8mb4_unicode_ci เพื่อแก้ปัญหา Collation Mismatch ***
 $cssale_options = "";
-$sql_cssale = "SELECT docno, custname FROM cssale WHERE shipflag = 1 ORDER BY docdate DESC, docno DESC LIMIT 200";
+$sql_cssale = "SELECT cs.docno, cs.custname 
+               FROM cssale cs
+               LEFT JOIN orders o ON cs.docno = o.cssale_docno COLLATE utf8mb4_unicode_ci
+               WHERE cs.shipflag = 1 AND o.order_id IS NULL
+               ORDER BY cs.docdate DESC, cs.docno DESC 
+               LIMIT 200";
 $result_cssale = $conn->query($sql_cssale);
+if ($result_cssale === false) {
+    // สำหรับ Debug: แสดง error ถ้า query ผิดพลาด
+    // die("SQL Error in add_order_form.php: " . $conn->error);
+}
 if ($result_cssale && $result_cssale->num_rows > 0) { while($row = $result_cssale->fetch_assoc()) { $cssale_options .= "<option value='" . htmlspecialchars($row['docno']) . "'>" . htmlspecialchars($row['docno'] . ' - ' . $row['custname']) . "</option>"; } }
+
 $origin_options = "";
 $sql_origin = "SELECT id, CONCAT_WS(' ', tambon, amphoe, province, CONCAT('(หมู่: ', mooban, ')')) AS full_address FROM origin ORDER BY province, amphoe, tambon, mooban";
 $result_origin = $conn->query($sql_origin);
 if ($result_origin && $result_origin->num_rows > 0) { while($row = $result_origin->fetch_assoc()) { $origin_options .= "<option value='" . htmlspecialchars($row['id']) . "'>" . htmlspecialchars($row['full_address']) . "</option>"; } }
+
 $transport_origin_options = "";
 $sql_transport = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY origin_name";
 $result_transport = $conn->query($sql_transport);
@@ -40,7 +52,6 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="<?php echo BASE_URL; ?>themes/modern_red_theme.css" rel="stylesheet">
     <style>
-        /* เพิ่ม: สไตล์สำหรับกล่องข้อมูลบิล */
         .bill-info-box {
             background-color: #f1faff; /* สีฟ้าอ่อน */
             border-left: 4px solid #009ef7; /* เส้นเน้นสีน้ำเงิน */
@@ -71,7 +82,6 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
                 </div>
             </div>
 
-            <!-- แก้ไข: เปลี่ยน class ของ container -->
             <div id="bill-details-container" class="mt-2 mb-3 p-3 rounded bill-info-box" style="display: none;">
                 <h6>ข้อมูลจากบิล</h6>
                 <div class="row">
@@ -134,7 +144,6 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
                 const detailsContainer = $('#bill-details-container');
 
                 if (selectedDocNo) {
-                    // แสดง loading text ชั่วคราว
                     $('#display-custname').text('กำลังโหลด...');
                     $('#display-shipaddr').text('กำลังโหลด...');
                     $('#display-docdate').text('กำลังโหลด...');
@@ -148,7 +157,6 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
                         dataType: 'json',
                         success: function(response) {
                             if (response.status === 'success') {
-                                // แก้ไข: เพิ่มการแสดงผลข้อมูลใหม่
                                 $('#display-custname').text(response.custname || '-');
                                 $('#display-shipaddr').text(response.shipaddr || '-');
                                 $('#display-docdate').text(response.docdate_formatted || '-');
