@@ -114,7 +114,7 @@ $sql_data_base = "SELECT
                     cu.lname AS salesman_name
                 FROM orders o
                 LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci
-                LEFT JOIN csuser cu ON cs.salesman = cu.code
+                LEFT JOIN csuser cu ON cs.salesman = cu.id
                 LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id
                 LEFT JOIN staff s ON o.assigned_staff_id = s.staff_id";
 $sql_data_final = $sql_data_base . $sql_where . " ORDER BY o.updated_at DESC LIMIT ? OFFSET ?";
