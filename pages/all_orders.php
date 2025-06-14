@@ -66,10 +66,9 @@ if (!empty($filter_status)) {
     $query_string_params['filter_status'] = $filter_status;
 }
 if (!empty($filter_salesman)) {
-    // *** แก้ไข: เปรียบเทียบกับ cu.id แทน cs.saleman ***
     $where_clauses[] = "cu.id = ?"; 
     $params[] = $filter_salesman; 
-    $param_types .= "i"; // เปลี่ยน type เป็น integer
+    $param_types .= "i"; 
     $query_string_params['filter_salesman'] = $filter_salesman;
 }
 if (!empty($filter_date_start)) {
@@ -93,7 +92,6 @@ if (!empty($where_clauses)) {
 }
 
 // --- Count total items for pagination ---
-// *** แก้ไข: เพิ่ม LEFT JOIN csuser cu ***
 $sql_count_base = "SELECT COUNT(o.order_id) as total_count FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci LEFT JOIN csuser cu ON cs.salesman = cu.id";
 $sql_count_final = $sql_count_base . $sql_where;
 $stmt_count = $conn->prepare($sql_count_final);
@@ -219,7 +217,8 @@ if ($is_ajax_request) {
             </div>
              <div class="form-row">
                 <div class="col-12 text-right">
-                    <a href="<?php echo BASE_URL; ?>pages/all_orders.php" class="btn btn-danger"><i class="fas fa-undo"></i> ล้างค่า</a>
+                    <a href="#" id="export-btn" class="btn btn-success"><i class="fas fa-file-excel"></i> Export to Excel</a>
+                    <a href="<?php echo BASE_URL; ?>pages/all_orders.php" class="btn btn-danger ml-2"><i class="fas fa-undo"></i> ล้างค่า</a>
                 </div>
              </div>
         </form>
@@ -258,6 +257,14 @@ if ($is_ajax_request) {
             $('.select2-filter').select2({
                  // allowClear: true ถ้าต้องการให้มีปุ่ม x
             });
+
+            function updateExportLink() {
+                let currentFilters = $('#filterForm').serialize();
+                // ไม่ต้องส่ง page ไปด้วย
+                currentFilters = currentFilters.replace(/&?page=\d+/, '');
+                let exportUrl = '<?php echo BASE_URL; ?>php/export_excel.php?' + currentFilters;
+                $('#export-btn').attr('href', exportUrl);
+            }
 
             function renderStatusBadge(status) {
                 let badgeClass = 'badge-light-secondary';
@@ -331,6 +338,7 @@ if ($is_ajax_request) {
                         }
                         $('#items-count-info').html(`<small>พบทั้งหมด ${response.total_items} รายการ (หน้า ${response.current_page} จาก ${response.total_pages})</small>`);
                         renderPagination(response.total_pages, response.current_page);
+                        updateExportLink(); // Update export link with current filters
                     },
                     error: function() {
                         $('#ordersTableBody').html('<tr><td colspan="7" class="text-center py-5 text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>');
@@ -343,12 +351,13 @@ if ($is_ajax_request) {
 
             // Initial data load
             fetchData(<?php echo $current_page; ?>);
+            updateExportLink(); // Initial export link setup
 
             // Event handlers for filters
-            $('#filterForm input, #filterForm select').on('change', function() {
+            $('#filterForm').on('change', 'input, select', function() {
                  fetchData(1);
             });
-            $('#search_term').on('keyup', function() {
+            $('#filterForm').on('keyup', 'input[type="text"]', function() {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(function() {
                     fetchData(1);

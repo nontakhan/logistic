@@ -1,7 +1,7 @@
 <?php
 // logistic/generate_hash.php
 
-$passwordToHash = 'password123';
+$passwordToHash = '123456';
 $hash = password_hash($passwordToHash, PASSWORD_DEFAULT);
 
 echo "<h3>Password Hash Generator</h3>";
