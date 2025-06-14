@@ -21,14 +21,13 @@ $current_page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['
 $offset = ($current_page - 1) * $items_per_page;
 
 // --- ดึงข้อมูลสำหรับ Filters ---
-// *** เพิ่ม: ดึงข้อมูลพนักงานขายสำหรับ Dropdown ***
 $salesman_options_filter = "<option value=''>พนักงานขายทั้งหมด</option>";
-$sql_salesman_filter = "SELECT code, lname FROM csuser WHERE lname IS NOT NULL AND lname != '' ORDER BY lname ASC";
+$sql_salesman_filter = "SELECT id, lname FROM csuser WHERE lname IS NOT NULL AND lname != '' ORDER BY lname ASC";
 $result_salesman_filter = $conn->query($sql_salesman_filter);
 if ($result_salesman_filter && $result_salesman_filter->num_rows > 0) {
     while($row = $result_salesman_filter->fetch_assoc()) {
-        $selected_salesman = (isset($_GET['filter_salesman']) && $_GET['filter_salesman'] == $row['code']) ? 'selected' : '';
-        $salesman_options_filter .= "<option value='" . htmlspecialchars($row['code']) . "' $selected_salesman>" . htmlspecialchars($row['code'] . ' - ' . $row['lname']) . "</option>";
+        $selected_salesman = (isset($_GET['filter_salesman']) && $_GET['filter_salesman'] == $row['id']) ? 'selected' : '';
+        $salesman_options_filter .= "<option value='" . htmlspecialchars($row['id']) . "' $selected_salesman>" . htmlspecialchars($row['lname']) . "</option>";
     }
 }
 
@@ -36,7 +35,7 @@ if ($result_salesman_filter && $result_salesman_filter->num_rows > 0) {
 // --- จัดการการค้นหาและกรอง ---
 $search_term = isset($_GET['search_term']) ? trim($conn->real_escape_string($_GET['search_term'])) : '';
 $filter_status = isset($_GET['filter_status']) ? $conn->real_escape_string($_GET['filter_status']) : '';
-$filter_salesman = isset($_GET['filter_salesman']) ? $conn->real_escape_string($_GET['filter_salesman']) : ''; // รับค่า filter พนักงานขาย
+$filter_salesman = isset($_GET['filter_salesman']) ? $conn->real_escape_string($_GET['filter_salesman']) : '';
 $filter_date_start = isset($_GET['filter_date_start']) && !empty($_GET['filter_date_start']) ? $conn->real_escape_string($_GET['filter_date_start']) : '';
 $filter_date_end = isset($_GET['filter_date_end']) && !empty($_GET['filter_date_end']) ? $conn->real_escape_string($_GET['filter_date_end']) : '';
 
@@ -66,11 +65,11 @@ if (!empty($filter_status)) {
     $param_types .= "s"; 
     $query_string_params['filter_status'] = $filter_status;
 }
-// *** เพิ่ม: เงื่อนไขการกรองตามพนักงานขาย ***
 if (!empty($filter_salesman)) {
-    $where_clauses[] = "cs.saleman = ?"; 
+    // *** แก้ไข: เปรียบเทียบกับ cu.id แทน cs.saleman ***
+    $where_clauses[] = "cu.id = ?"; 
     $params[] = $filter_salesman; 
-    $param_types .= "s"; 
+    $param_types .= "i"; // เปลี่ยน type เป็น integer
     $query_string_params['filter_salesman'] = $filter_salesman;
 }
 if (!empty($filter_date_start)) {
@@ -94,7 +93,8 @@ if (!empty($where_clauses)) {
 }
 
 // --- Count total items for pagination ---
-$sql_count_base = "SELECT COUNT(o.order_id) as total_count FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci";
+// *** แก้ไข: เพิ่ม LEFT JOIN csuser cu ***
+$sql_count_base = "SELECT COUNT(o.order_id) as total_count FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci LEFT JOIN csuser cu ON cs.salesman = cu.id";
 $sql_count_final = $sql_count_base . $sql_where;
 $stmt_count = $conn->prepare($sql_count_final);
 if (!empty($params)) {
@@ -107,10 +107,10 @@ $total_pages = ceil($total_items / $items_per_page);
 $stmt_count->close();
 
 // --- Fetch data for the current page ---
-// *** เพิ่ม: JOIN กับ csuser และเลือก salesman_name (lname) ***
 $sql_data_base = "SELECT 
                     o.order_id, o.cssale_docno, cs.custname, cs.shipaddr, o.status, o.updated_at,
                     t_org.origin_name AS transport_origin_name,
+                    cu.id AS salesman_id,
                     cu.lname AS salesman_name
                 FROM orders o
                 LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci
@@ -228,13 +228,13 @@ if ($is_ajax_request) {
             <table class="table table-hover align-middle">
                 <thead class="thead-light">
                     <tr>
-                        <th>เลขที่บิล</th>
+                        <th style="white-space: nowrap;">เลขที่บิล</th>
                         <th>ชื่อลูกค้า</th>
-                        <th>พนักงานขาย</th> <!-- เพิ่ม Header -->
+                        <th style="white-space: nowrap;">พนักงานขาย</th>
                         <th>ต้นทางขนส่ง</th>
                         <th>สถานที่ส่ง</th>
                         <th class="text-center">สถานะ</th>
-                        <th>อัปเดตล่าสุด</th>
+                        <th style="white-space: nowrap;">อัปเดตล่าสุด</th>
                     </tr>
                 </thead>
                 <tbody id="ordersTableBody">
@@ -274,15 +274,16 @@ if ($is_ajax_request) {
 
             function buildTableRow(row) {
                 let statusClass = 'status-' + (row.status || '').toLowerCase().replace(/[\s\/]/g, '-');
+                let salesmanDisplay = row.salesman_name ? `${row.salesman_id} - ${row.salesman_name}` : '-';
                 return `
                     <tr class="${statusClass}">
-                        <td><strong>${row.cssale_docno || '-'}</strong></td>
+                        <td style="white-space: nowrap;"><strong>${row.cssale_docno || '-'}</strong></td>
                         <td>${row.custname || '-'}</td>
-                        <td>${row.salesman_name || '-'}</td>
+                        <td style="white-space: nowrap;">${salesmanDisplay}</td>
                         <td>${row.transport_origin_name || '-'}</td>
                         <td>${row.shipaddr || '-'}</td>
                         <td class="text-center">${renderStatusBadge(row.status)}</td>
-                        <td>${row.updated_at_formatted || '-'}</td>
+                        <td style="white-space: nowrap;">${row.updated_at_formatted || '-'}</td>
                     </tr>
                 `;
             }
