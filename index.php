@@ -152,7 +152,7 @@ $conn->close();
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2"><a href="<?php echo BASE_URL; ?>pages/pending_assignment.php" class="btn btn-warning btn-block"><i class="fas fa-user-cog mr-1"></i>รอจัดคน/รถ</a></div>
                  <div class="col-lg-2 col-md-4 col-sm-6 mb-2"><a href="<?php echo BASE_URL; ?>pages/pending_delivery.php" class="btn btn-success btn-block"><i class="fas fa-truck-loading mr-1"></i>รอส่งของ</a></div>
                 <?php endif; ?>
-                <?php if (has_role([2, 3, 4])): ?><div class="col-lg-2 col-md-4 col-sm-6 mb-2"><a href="<?php echo BASE_URL; ?>pages/all_orders.php" class="btn btn-secondary btn-block"><i class="fas fa-list-alt mr-1"></i>รายการทั้งหมด</a></div><?php endif; ?>
+                <?php if (has_role([1, 2, 3, 4])): ?><div class="col-lg-2 col-md-4 col-sm-6 mb-2"><a href="<?php echo BASE_URL; ?>pages/all_orders.php" class="btn btn-secondary btn-block"><i class="fas fa-list-alt mr-1"></i>รายการทั้งหมด</a></div><?php endif; ?>
             </div>
         <?php endif; ?>
 
