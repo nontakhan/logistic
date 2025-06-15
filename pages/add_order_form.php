@@ -25,7 +25,7 @@ $result_cssale = $conn->query($sql_cssale);
 if ($result_cssale && $result_cssale->num_rows > 0) { while($row = $result_cssale->fetch_assoc()) { $cssale_options .= "<option value='" . htmlspecialchars($row['docno']) . "'>" . htmlspecialchars($row['docno'] . ' - ' . $row['custname']) . "</option>"; } }
 
 $origin_options = "";
-$sql_origin = "SELECT id, CONCAT_WS(' ', mooban, moo, tambon, amphoe, province) AS full_address FROM origin ORDER BY province, amphoe, tambon, mooban";
+$sql_origin = "SELECT id, CONCAT_WS(' ', mooban, moo, tambon, amphoe, province) AS full_address FROM origin ORDER BY id";
 $result_origin = $conn->query($sql_origin);
 if ($result_origin && $result_origin->num_rows > 0) { while($row = $result_origin->fetch_assoc()) { $origin_options .= "<option value='" . htmlspecialchars($row['id']) . "'>" . htmlspecialchars($row['full_address']) . "</option>"; } }
 
