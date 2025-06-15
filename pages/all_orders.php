@@ -2,7 +2,7 @@
 // pages/all_orders.php
 require_once '../php/check_session.php';
 // สิทธิ์ที่ต้องการสำหรับหน้านี้
-require_login([2, 3, 4]);
+require_login([1, 2, 3, 4]);
 
 require_once '../php/db_connect.php';
 
