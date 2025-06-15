@@ -34,12 +34,12 @@ $stmt->execute();
 $result_orders = $stmt->get_result();
 
 $staff_options = "";
-$sql_staff = "SELECT staff_id, staff_name FROM staff ORDER BY staff_name";
+$sql_staff = "SELECT staff_id, staff_name FROM staff ORDER BY staff_id";
 $result_staff = $conn->query($sql_staff);
 if ($result_staff && $result_staff->num_rows > 0) { while($row = $result_staff->fetch_assoc()) { $staff_options .= "<option value='" . htmlspecialchars($row['staff_id']) . "'>" . htmlspecialchars($row['staff_name']) . "</option>"; } }
 
 $vehicle_options = "";
-$sql_vehicles = "SELECT vehicle_id, CONCAT(vehicle_name, ' (', vehicle_plate, ')') AS vehicle_display FROM vehicles ORDER BY vehicle_name";
+$sql_vehicles = "SELECT vehicle_id, CONCAT(vehicle_name, ' (', vehicle_plate, ')') AS vehicle_display FROM vehicles ORDER BY vehicle_id";
 $result_vehicles = $conn->query($sql_vehicles);
 if ($result_vehicles && $result_vehicles->num_rows > 0) { while($row = $result_vehicles->fetch_assoc()) { $vehicle_options .= "<option value='" . htmlspecialchars($row['vehicle_id']) . "'>" . htmlspecialchars($row['vehicle_display']) . "</option>"; } }
 ?>
