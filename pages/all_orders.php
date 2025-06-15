@@ -21,13 +21,14 @@ $current_page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['
 $offset = ($current_page - 1) * $items_per_page;
 
 // --- ดึงข้อมูลสำหรับ Filters ---
+// *** แก้ไข: ดึงข้อมูลพนักงานขายสำหรับ Dropdown จากตาราง cssale ***
 $salesman_options_filter = "<option value=''>พนักงานขายทั้งหมด</option>";
-$sql_salesman_filter = "SELECT id, lname FROM csuser WHERE lname IS NOT NULL AND lname != '' and id in (select DISTINCT c.salesman from cssale c inner join orders o on o.cssale_docno = c.docno COLLATE utf8mb4_unicode_ci) ORDER BY lname ASC";
+$sql_salesman_filter = "SELECT DISTINCT code, lname FROM cssale WHERE code IS NOT NULL AND lname IS NOT NULL AND lname != '' ORDER BY lname ASC";
 $result_salesman_filter = $conn->query($sql_salesman_filter);
 if ($result_salesman_filter && $result_salesman_filter->num_rows > 0) {
     while($row = $result_salesman_filter->fetch_assoc()) {
-        $selected_salesman = (isset($_GET['filter_salesman']) && $_GET['filter_salesman'] == $row['id']) ? 'selected' : '';
-        $salesman_options_filter .= "<option value='" . htmlspecialchars($row['id']) . "' $selected_salesman>" . htmlspecialchars($row['lname']) . "</option>";
+        $selected_salesman = (isset($_GET['filter_salesman']) && $_GET['filter_salesman'] == $row['code']) ? 'selected' : '';
+        $salesman_options_filter .= "<option value='" . htmlspecialchars($row['code']) . "' $selected_salesman>" . htmlspecialchars($row['code'] . ' - ' . $row['lname']) . "</option>";
     }
 }
 
@@ -53,10 +54,10 @@ if (is_logged_in() && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned
 // สร้าง query string สำหรับ pagination links
 $query_string_params = [];
 if (!empty($search_term)) {
-    $where_clauses[] = "(o.cssale_docno LIKE ? OR cs.custname LIKE ?)";
+    $where_clauses[] = "(o.cssale_docno LIKE ? OR cs.custname LIKE ? OR cs.lname LIKE ?)";
     $search_like = "%" . $search_term . "%";
-    array_push($params, $search_like, $search_like);
-    $param_types .= "ss";
+    array_push($params, $search_like, $search_like, $search_like);
+    $param_types .= "sss";
     $query_string_params['search_term'] = $search_term;
 }
 if (!empty($filter_status)) {
@@ -66,9 +67,9 @@ if (!empty($filter_status)) {
     $query_string_params['filter_status'] = $filter_status;
 }
 if (!empty($filter_salesman)) {
-    $where_clauses[] = "cu.id = ?"; 
+    $where_clauses[] = "cs.code = ?"; // กรองด้วย code ของพนักงานขาย
     $params[] = $filter_salesman; 
-    $param_types .= "i"; 
+    $param_types .= "s"; 
     $query_string_params['filter_salesman'] = $filter_salesman;
 }
 if (!empty($filter_date_start)) {
@@ -92,7 +93,7 @@ if (!empty($where_clauses)) {
 }
 
 // --- Count total items for pagination ---
-$sql_count_base = "SELECT COUNT(o.order_id) as total_count FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci LEFT JOIN csuser cu ON cs.salesman = cu.id";
+$sql_count_base = "SELECT COUNT(o.order_id) as total_count FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci";
 $sql_count_final = $sql_count_base . $sql_where;
 $stmt_count = $conn->prepare($sql_count_final);
 if (!empty($params)) {
@@ -107,14 +108,11 @@ $stmt_count->close();
 // --- Fetch data for the current page ---
 $sql_data_base = "SELECT 
                     o.order_id, o.cssale_docno, cs.custname, cs.shipaddr, o.status, o.updated_at,
-                    t_org.origin_name AS transport_origin_name,
-                    cu.id AS salesman_id,
-                    cu.lname AS salesman_name
+                    cs.code as salesman_code, cs.lname as salesman_name,
+                    t_org.origin_name AS transport_origin_name
                 FROM orders o
                 LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci
-                LEFT JOIN csuser cu ON cs.salesman = cu.id
-                LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id
-                LEFT JOIN staff s ON o.assigned_staff_id = s.staff_id";
+                LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id";
 $sql_data_final = $sql_data_base . $sql_where . " ORDER BY o.updated_at DESC LIMIT ? OFFSET ?";
 $params_data = $params;
 $params_data[] = $items_per_page;
@@ -151,10 +149,8 @@ if ($is_ajax_request) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ติดตามรายการทั้งหมด</title>
-    <!-- *** เพิ่ม: Favicon *** -->
+    
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚚</text></svg>">
-    
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -194,7 +190,7 @@ if ($is_ajax_request) {
             <div class="form-row">
                 <div class="form-group col-md-4">
                     <label for="search_term">ค้นหา</label>
-                    <input type="text" class="form-control" id="search_term" name="search_term" value="<?php echo htmlspecialchars($search_term); ?>" placeholder="ค้นหาจากเลขที่บิล หรือ ชื่อลูกค้า...">
+                    <input type="text" class="form-control" id="search_term" name="search_term" value="<?php echo htmlspecialchars($search_term); ?>" placeholder="ค้นหาจากเลขที่บิล, ชื่อลูกค้า, หรือพนักงานขาย...">
                 </div>
                 <div class="form-group col-md-3">
                     <label for="filter_salesman">พนักงานขาย</label>
@@ -220,8 +216,7 @@ if ($is_ajax_request) {
             </div>
              <div class="form-row">
                 <div class="col-12 text-right">
-                    <a href="#" id="export-btn" class="btn btn-success"><i class="fas fa-file-excel"></i> Export to Excel</a>
-                    <a href="<?php echo BASE_URL; ?>pages/all_orders.php" class="btn btn-danger ml-2"><i class="fas fa-undo"></i> ล้างค่า</a>
+                    <a href="<?php echo BASE_URL; ?>pages/all_orders.php" class="btn btn-danger"><i class="fas fa-undo"></i> ล้างค่า</a>
                 </div>
              </div>
         </form>
@@ -261,14 +256,6 @@ if ($is_ajax_request) {
                  // allowClear: true ถ้าต้องการให้มีปุ่ม x
             });
 
-            function updateExportLink() {
-                let currentFilters = $('#filterForm').serialize();
-                // ไม่ต้องส่ง page ไปด้วย
-                currentFilters = currentFilters.replace(/&?page=\d+/, '');
-                let exportUrl = '<?php echo BASE_URL; ?>php/export_excel.php?' + currentFilters;
-                $('#export-btn').attr('href', exportUrl);
-            }
-
             function renderStatusBadge(status) {
                 let badgeClass = 'badge-light-secondary';
                 let iconClass = 'fa-question-circle';
@@ -284,7 +271,7 @@ if ($is_ajax_request) {
 
             function buildTableRow(row) {
                 let statusClass = 'status-' + (row.status || '').toLowerCase().replace(/[\s\/]/g, '-');
-                let salesmanDisplay = row.salesman_name ? `${row.salesman_id} - ${row.salesman_name}` : '-';
+                let salesmanDisplay = row.salesman_name ? `${row.salesman_code} - ${row.salesman_name}` : '-';
                 return `
                     <tr class="${statusClass}">
                         <td style="white-space: nowrap;"><strong>${row.cssale_docno || '-'}</strong></td>
@@ -341,7 +328,6 @@ if ($is_ajax_request) {
                         }
                         $('#items-count-info').html(`<small>พบทั้งหมด ${response.total_items} รายการ (หน้า ${response.current_page} จาก ${response.total_pages})</small>`);
                         renderPagination(response.total_pages, response.current_page);
-                        updateExportLink(); // Update export link with current filters
                     },
                     error: function() {
                         $('#ordersTableBody').html('<tr><td colspan="7" class="text-center py-5 text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>');
@@ -354,13 +340,12 @@ if ($is_ajax_request) {
 
             // Initial data load
             fetchData(<?php echo $current_page; ?>);
-            updateExportLink(); // Initial export link setup
 
             // Event handlers for filters
-            $('#filterForm').on('change', 'input, select', function() {
+            $('#filterForm').on('change', 'input[type="date"], select', function() {
                  fetchData(1);
             });
-            $('#filterForm').on('keyup', 'input[type="text"]', function() {
+            $('#search_term').on('keyup', function() {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(function() {
                     fetchData(1);

@@ -8,15 +8,15 @@ $response = ['status' => 'error', 'message' => 'ไม่พบข้อมู�
 if (isset($_GET['docno']) && !empty($_GET['docno'])) {
     $docno = trim($_GET['docno']);
 
-    // *** แก้ไข: เปลี่ยนเงื่อนไขการ JOIN เป็น cs.saleman = cu.id และดึง cu.lname ***
+    // *** แก้ไข: ดึงข้อมูลจากตาราง cssale โดยตรง ไม่ต้อง JOIN csuser ***
     $sql = "SELECT 
-                cs.custname, 
-                cs.shipaddr,
-                cs.docdate,
-                cu.lname AS salesman_name
-            FROM cssale cs
-            LEFT JOIN csuser cu ON cs.salesman = cu.id
-            WHERE cs.docno = ? 
+                custname, 
+                shipaddr,
+                docdate,
+                code AS salesman_code,
+                lname AS salesman_name
+            FROM cssale
+            WHERE docno = ? 
             LIMIT 1";
             
     $stmt = $conn->prepare($sql);
@@ -29,11 +29,13 @@ if (isset($_GET['docno']) && !empty($_GET['docno'])) {
         if ($result->num_rows > 0) {
             $data = $result->fetch_assoc();
             
+            // แก้ไข: เพิ่มข้อมูล code และ lname ลงใน response
             $response = [
                 'status' => 'success',
                 'custname' => $data['custname'],
                 'shipaddr' => $data['shipaddr'],
                 'docdate_formatted' => !empty($data['docdate']) ? date("d/m/Y", strtotime($data['docdate'])) : '-',
+                'salesman_code' => $data['salesman_code'],
                 'salesman_name' => $data['salesman_name']
             ];
         }

@@ -40,10 +40,8 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เพิ่มรายการจัดส่งใหม่</title>
-    <!-- *** เพิ่ม: Favicon *** -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚚</text></svg>">
-    
     <!-- CSS links -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚚</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -81,6 +79,7 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
                     </select>
                 </div>
             </div>
+
             <div id="bill-details-container" class="mt-2 mb-3 p-3 rounded bill-info-box" style="display: none;">
                 <h6>ข้อมูลจากบิล</h6>
                 <div class="row">
@@ -94,6 +93,7 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
                     </div>
                 </div>
             </div>
+
             <div class="form-row">
                 <div class="form-group col-md-6">
                     <label for="transport_origin_id">ต้นทางขนส่ง:</label>
@@ -111,10 +111,12 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
                     </select>
                 </div>
             </div>
+
             <div class="form-group">
                 <label for="product_details">หมายเหตุ:</label>
                 <textarea class="form-control" id="product_details" name="product_details" rows="3"></textarea>
             </div>
+            
             <button type="submit" class="btn btn-primary">บันทึกรายการ</button>
         </form>
     </div>
@@ -123,34 +125,42 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="<?php echo BASE_URL; ?>js/script.js?v=1.2"></script> <!-- อัปเดตเวอร์ชันเล็กน้อย -->
+    <script src="<?php echo BASE_URL; ?>js/script.js?v=1.2"></script>
     <script>
         $(document).ready(function() {
             $('.select2-basic').select2({
                 placeholder: "-- กรุณาเลือก --",
                 allowClear: true
             });
+
             function getBaseUrl() {
                 return "<?php echo BASE_URL; ?>";
             }
+
             $('#cssale_docno').on('change', function() {
                 const selectedDocNo = $(this).val();
                 const detailsContainer = $('#bill-details-container');
+
                 if (selectedDocNo) {
                     $('#display-custname').text('กำลังโหลด...');
                     $('#display-shipaddr').text('กำลังโหลด...');
                     $('#display-docdate').text('กำลังโหลด...');
                     $('#display-salesman').text('กำลังโหลด...');
                     detailsContainer.slideDown();
+
                     $.ajax({
                         url: getBaseUrl() + 'php/get_cs_sale_details.php',
-                        type: 'GET', data: { docno: selectedDocNo }, dataType: 'json',
+                        type: 'GET',
+                        data: { docno: selectedDocNo },
+                        dataType: 'json',
                         success: function(response) {
                             if (response.status === 'success') {
+                                let salesmanDisplay = (response.salesman_code && response.salesman_name) ? `${response.salesman_code} - ${response.salesman_name}` : '-';
+
                                 $('#display-custname').text(response.custname || '-');
                                 $('#display-shipaddr').text(response.shipaddr || '-');
                                 $('#display-docdate').text(response.docdate_formatted || '-');
-                                $('#display-salesman').text(response.salesman_name || '-');
+                                $('#display-salesman').text(salesmanDisplay);
                             } else {
                                 $('#display-custname').text('ไม่พบข้อมูล');
                                 $('#display-shipaddr').text('ไม่พบข้อมูล');
