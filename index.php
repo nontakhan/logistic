@@ -60,6 +60,9 @@ $conn->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NR Logistics - Dashboard</title>
+    <!-- *** เพิ่ม: Favicon *** -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚚</text></svg>">
+    
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -114,12 +117,17 @@ $conn->close();
             <div class="row quick-actions">
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2"><a href="<?php echo BASE_URL; ?>pages/price_checker.php" class="btn btn-outline-danger btn-block"><i class="fas fa-search-dollar mr-1"></i>เช็คราคา</a></div>
                 <?php if (has_role([1, 4])): ?><div class="col-lg-2 col-md-4 col-sm-6 mb-2"><a href="<?php echo BASE_URL; ?>pages/add_order_form.php" class="btn btn-primary btn-block"><i class="fas fa-plus-circle mr-1"></i>เพิ่มรายการ</a></div><?php endif; ?>
+                
                 <?php if (has_role([2, 3, 4])): ?>
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2"><a href="<?php echo BASE_URL; ?>pages/pending_acknowledgement.php" class="btn btn-info btn-block"><i class="fas fa-inbox mr-1"></i>รอรับเรื่อง</a></div>
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2"><a href="<?php echo BASE_URL; ?>pages/pending_assignment.php" class="btn btn-warning btn-block"><i class="fas fa-user-cog mr-1"></i>รอจัดคน/รถ</a></div>
                  <div class="col-lg-2 col-md-4 col-sm-6 mb-2"><a href="<?php echo BASE_URL; ?>pages/pending_delivery.php" class="btn btn-success btn-block"><i class="fas fa-truck-loading mr-1"></i>รอส่งของ</a></div>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-2"><a href="<?php echo BASE_URL; ?>pages/all_orders.php" class="btn btn-secondary btn-block"><i class="fas fa-list-alt mr-1"></i>รายการทั้งหมด</a></div>
                 <?php endif; ?>
+                
+                <!-- *** แก้ไข: ปุ่มรายการทั้งหมดเข้าได้ทุกสิทธิ์ *** -->
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                    <a href="<?php echo BASE_URL; ?>pages/all_orders.php" class="btn btn-secondary btn-block"><i class="fas fa-list-alt mr-1"></i>รายการทั้งหมด</a>
+                </div>
             </div>
         <?php endif; ?>
 
