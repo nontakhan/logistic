@@ -30,9 +30,16 @@ $result_origin = $conn->query($sql_origin);
 if ($result_origin && $result_origin->num_rows > 0) { while($row = $result_origin->fetch_assoc()) { $origin_options .= "<option value='" . htmlspecialchars($row['id']) . "'>" . htmlspecialchars($row['full_address']) . "</option>"; } }
 
 $transport_origin_options = "";
-$sql_transport = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY origin_name";
+$sql_transport = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY transport_origin_id";
 $result_transport = $conn->query($sql_transport);
 if ($result_transport && $result_transport->num_rows > 0) { while($row = $result_transport->fetch_assoc()) { $transport_origin_options .= "<option value='" . htmlspecialchars($row['transport_origin_id']) . "'>" . htmlspecialchars($row['origin_name']) . "</option>"; } }
+
+$salesman_modal_options = "";
+$sql_salesman_modal = "SELECT DISTINCT code, lname FROM cssale WHERE code IS NOT NULL AND lname IS NOT NULL AND lname != '' ORDER BY lname ASC";
+$result_salesman_modal = $conn->query($sql_salesman_modal);
+if ($result_salesman_modal && $result_salesman_modal->num_rows > 0) { while($row = $result_salesman_modal->fetch_assoc()) { $salesman_modal_options .= "<option value='" . htmlspecialchars($row['code']) . "'>" . htmlspecialchars($row['code'] . ' - ' . $row['lname']) . "</option>"; } }
+
+
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -60,13 +67,21 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="mb-0">เพิ่มรายการจัดส่งใหม่</h2>
-            <a href="<?php echo BASE_URL; ?>index.php" class="btn btn-secondary"><i class="fas fa-arrow-left mr-2"></i>กลับหน้าหลัก</a>
+            <div>
+                <!-- *** แก้ไข: ย้ายปุ่มเพิ่มบิลใหม่มาที่นี่ *** -->
+                <button type="button" class="btn btn-outline-danger" data-toggle="modal" data-target="#addNewBillModal">
+                    <i class="fas fa-plus"></i> เพิ่มบิลใหม่
+                </button>
+                <a href="<?php echo BASE_URL; ?>index.php" class="btn btn-secondary ml-2"><i class="fas fa-arrow-left mr-2"></i>กลับหน้าหลัก</a>
+            </div>
         </div>
         <form id="addOrderForm">
             <div class="form-row">
                 <div class="form-group col-md-6">
-                    <label for="cssale_docno">เลขที่บิล (จาก CS Sale):</label>
-                    <select class="form-control select2-basic" id="cssale_docno" name="cssale_docno" required>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label for="cssale_docno" class="mb-0">เลขที่บิล (จาก CS Sale):</label>
+                    </div>
+                    <select class="form-control select2-basic mt-2" id="cssale_docno" name="cssale_docno" required>
                         <option value="">-- เลือกเลขที่บิล --</option>
                         <?php echo $cssale_options; ?>
                     </select>
@@ -119,6 +134,51 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
             
             <button type="submit" class="btn btn-primary">บันทึกรายการ</button>
         </form>
+    </div>
+
+    <!-- *** เพิ่ม: Modal สำหรับเพิ่มบิลใหม่ *** -->
+    <div class="modal fade" id="addNewBillModal" tabindex="-1" role="dialog" aria-labelledby="addNewBillModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addNewBillModalLabel"><i class="fas fa-file-invoice-dollar mr-2"></i>เพิ่มข้อมูลบิลใหม่</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form id="addNewBillForm">
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="new_docno">เลขที่บิล</label>
+                <input type="text" class="form-control" id="new_docno" name="new_docno" required>
+              </div>
+              <div class="form-group">
+                <label for="new_docdate">วันที่สร้างบิล</label>
+                <input type="date" class="form-control" id="new_docdate" name="new_docdate" required value="<?php echo date('Y-m-d'); ?>">
+              </div>
+              <div class="form-group">
+                <label for="new_custname">ชื่อลูกค้า</label>
+                <input type="text" class="form-control" id="new_custname" name="new_custname" required>
+              </div>
+               <div class="form-group">
+                <label for="new_salesman_code">พนักงานขาย</label>
+                <select class="form-control" id="new_salesman_code" name="new_salesman_code" required style="width: 100%;">
+                    <option value="">-- เลือกพนักงานขาย --</option>
+                    <?php echo $salesman_modal_options; ?>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="new_shipaddr">ที่อยู่จัดส่ง</label>
+                <textarea class="form-control" id="new_shipaddr" name="new_shipaddr" rows="3" required></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
+              <button type="submit" class="btn btn-primary">บันทึกข้อมูลบิล</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
     <!-- JavaScript scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -178,6 +238,62 @@ if ($result_transport && $result_transport->num_rows > 0) { while($row = $result
                 } else {
                     detailsContainer.slideUp();
                 }
+            });
+            $('#new_salesman_code').select2({
+                placeholder: "-- เลือกพนักงานขาย --",
+                dropdownParent: $('#addNewBillModal') // สำคัญมากสำหรับ Select2 ใน Modal
+            });
+
+            $('#addNewBillForm').on('submit', function(e) {
+                e.preventDefault();
+                const formData = $(this).serialize();
+
+                Swal.fire({
+                    title: 'กำลังบันทึกข้อมูลบิล...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                $.ajax({
+                    url: "<?php echo BASE_URL; ?>php/add_new_bill.php",
+                    type: 'POST',
+                    data: formData,
+                    dataType: 'json',
+                    success: function(response) {
+                        Swal.close();
+                        if (response.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'สำเร็จ!',
+                                text: response.message
+                            }).then(() => {
+                                $('#addNewBillModal').modal('hide');
+                                // โหลดหน้าใหม่เพื่อให้ dropdown อัปเดต
+                                location.reload();
+                            });
+                        } else {
+                            let errorHtml = response.message;
+                            if (response.errors) {
+                                errorHtml += '<ul class="text-left mt-2">';
+                                for(const key in response.errors) {
+                                    errorHtml += `<li>${response.errors[key]}</li>`;
+                                }
+                                errorHtml += '</ul>';
+                            }
+                            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', html: errorHtml });
+                        }
+                    },
+                    error: function() {
+                        Swal.close();
+                        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ' });
+                    }
+                });
+            });
+
+             // ล้างฟอร์มใน Modal เมื่อปิด
+            $('#addNewBillModal').on('hidden.bs.modal', function () {
+                $('#addNewBillForm')[0].reset();
+                $('#new_salesman_code').val(null).trigger('change');
             });
         });
     </script>
