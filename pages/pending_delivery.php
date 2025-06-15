@@ -44,7 +44,7 @@ $result = $conn->query($sql);
             <table class="table table-bordered table-hover table-striped">
                 <thead class="thead-light">
                     <tr>
-                        <th>ID ติดตาม</th><th>เลขที่บิล</th><th>ชื่อลูกค้า</th><th>ที่อยู่จัดส่ง</th>
+                        <th>ID ติดตาม</th><th>เลขที่บิล</th><th>ชื่อลูกค้า</th>
                         <th>หมายเหตุ</th>
                         <th>ต้นทางขนส่ง</th><th>คนส่งของ</th><th>รถที่ใช้</th>
                         <th>วันที่สั่ง</th><th>ความเร่งด่วน</th><th>ดำเนินการ</th>
@@ -57,8 +57,7 @@ $result = $conn->query($sql);
                                 <td><?php echo htmlspecialchars($row['order_id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['cssale_docno']); ?></td>
                                 <td><?php echo htmlspecialchars($row['custname']); ?></td>
-                                <td><?php echo !empty($row['customer_full_address']) ? htmlspecialchars($row['customer_full_address']) : htmlspecialchars($row['cssale_shipaddr']); ?></td>
-                                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?php echo htmlspecialchars($row['product_details']); ?>"><?php echo htmlspecialchars($row['product_details']); ?></td>
+                                <td><?php echo htmlspecialchars($row['cssale_shipaddr']); ?></td>
                                 <td><?php echo htmlspecialchars($row['transport_origin_name']); ?></td>
                                 <td><?php echo htmlspecialchars($row['assigned_staff_name'] ?: '-'); ?></td>
                                 <td><?php echo htmlspecialchars($row['assigned_vehicle_info'] ?: '-'); ?></td>

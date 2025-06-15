@@ -68,7 +68,7 @@ $result = $stmt->get_result();
             <table class="table table-bordered table-hover table-striped">
                 <thead class="thead-light">
                     <tr>
-                        <th>ID ติดตาม</th><th>เลขที่บิล</th><th>ชื่อลูกค้า</th><th>ที่อยู่จัดส่ง</th>
+                        <th>ID ติดตาม</th><th>เลขที่บิล</th><th>ชื่อลูกค้า</th>
                         <th>หมายเหตุ</th>
                         <th>ต้นทางขนส่ง</th><th>วันที่สั่ง</th><th>ความเร่งด่วน</th><th>ดำเนินการ</th>
                     </tr>
@@ -80,8 +80,7 @@ $result = $stmt->get_result();
                                 <td><?php echo htmlspecialchars($row['order_id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['cssale_docno']); ?></td>
                                 <td><?php echo htmlspecialchars($row['custname']); ?></td>
-                                <td><?php echo !empty($row['customer_full_address']) ? htmlspecialchars($row['customer_full_address']) : htmlspecialchars($row['cssale_shipaddr']); ?></td>
-                                <td><?php echo nl2br(htmlspecialchars($row['product_details'])); ?></td>
+                                <td><?php echo htmlspecialchars($row['cssale_shipaddr']); ?></td>
                                 <td><?php echo htmlspecialchars($row['transport_origin_name']); ?></td>
                                 <td><?php echo date("d/m/Y", strtotime($row['order_date'])); ?></td>
                                 <td><?php echo htmlspecialchars($row['priority']); ?></td>
