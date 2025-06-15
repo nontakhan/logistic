@@ -15,7 +15,7 @@ define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . $base_project_folder . '/
 // ดึงข้อมูลสถานที่ทั้งหมดสำหรับ Dropdown
 $origin_options = "";
 // *** แก้ไข: ปรับปรุง SQL query เพื่อเรียงลำดับที่อยู่ใหม่ ***
-$sql_origin = "SELECT id, CONCAT_WS(' ', mooban, moo, tambon, amphoe, province) AS full_address FROM origin ORDER BY province, amphoe, tambon, mooban";
+$sql_origin = "SELECT id, CONCAT_WS(' ', mooban, moo, tambon, amphoe, province) AS full_address FROM origin ORDER BY id";
 $result_origin = $conn->query($sql_origin);
 if ($result_origin && $result_origin->num_rows > 0) { 
     while($row = $result_origin->fetch_assoc()) { 
