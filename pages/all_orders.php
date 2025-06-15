@@ -22,7 +22,7 @@ $offset = ($current_page - 1) * $items_per_page;
 
 // --- ดึงข้อมูลสำหรับ Filters ---
 $salesman_options_filter = "<option value=''>พนักงานขายทั้งหมด</option>";
-$sql_salesman_filter = "SELECT id, lname FROM csuser WHERE lname IS NOT NULL AND lname != '' ORDER BY lname ASC";
+$sql_salesman_filter = "SELECT id, lname FROM csuser WHERE lname IS NOT NULL AND lname != '' and id in (select DISTINCT c.salesman from cssale c inner join orders o on o.cssale_docno = c.docno COLLATE utf8mb4_unicode_ci) ORDER BY lname ASC";
 $result_salesman_filter = $conn->query($sql_salesman_filter);
 if ($result_salesman_filter && $result_salesman_filter->num_rows > 0) {
     while($row = $result_salesman_filter->fetch_assoc()) {

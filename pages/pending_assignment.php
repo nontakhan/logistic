@@ -9,36 +9,37 @@ $project_folder = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 $base_project_folder = str_replace('/pages', '', $project_folder);
 define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . $base_project_folder . '/');
 
-// --- สร้างเงื่อนไข SQL สำหรับกรองข้อมูล ---
-$where_clauses = ["o.status = 'รับเรื่อง'"]; // เงื่อนไขพื้นฐานของหน้านี้
+$search_docno = isset($_GET['search_docno']) ? trim($conn->real_escape_string($_GET['search_docno'])) : '';
+
+$where_clauses = ["o.status = 'รับเรื่อง'"];
 $params = [];
 $param_types = "";
-
-// เพิ่มเงื่อนไขกรองตามสาขาของผู้ใช้
 if (is_logged_in() && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned_transport_origin_id'])) {
     $where_clauses[] = "o.transport_origin_id = ?";
     $params[] = $_SESSION['assigned_transport_origin_id'];
     $param_types .= "i";
 }
+if (!empty($search_docno)) {
+    $where_clauses[] = "o.cssale_docno LIKE ?";
+    $search_like = "%" . $search_docno . "%";
+    $params[] = $search_like;
+    $param_types .= "s";
+}
 $sql_where = " WHERE " . implode(" AND ", $where_clauses);
 
 $sql_orders = "SELECT o.order_id, o.cssale_docno, cs.custname, CONCAT_WS(', ', ori.moo, ori.mooban, ori.tambon, ori.amphoe, ori.province) AS customer_full_address, cs.shipaddr AS cssale_shipaddr, o.product_details, o.priority, o.order_date, t_org.origin_name AS transport_origin_name FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci LEFT JOIN origin ori ON o.customer_address_origin_id = ori.id LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id" . $sql_where . " ORDER BY CASE o.priority WHEN 'ด่วนที่สุด' THEN 1 WHEN 'ด่วน' THEN 2 WHEN 'ปกติ' THEN 3 ELSE 4 END ASC, o.order_date ASC, o.created_at ASC";
-
 $stmt = $conn->prepare($sql_orders);
-if (!empty($params)) {
-    $stmt->bind_param($param_types, ...$params);
-}
+if (!empty($params)) { $stmt->bind_param($param_types, ...$params); }
 $stmt->execute();
 $result_orders = $stmt->get_result();
 
-
 $staff_options = "";
-$sql_staff = "SELECT staff_id, staff_name FROM staff ORDER BY staff_id";
+$sql_staff = "SELECT staff_id, staff_name FROM staff ORDER BY staff_name";
 $result_staff = $conn->query($sql_staff);
 if ($result_staff && $result_staff->num_rows > 0) { while($row = $result_staff->fetch_assoc()) { $staff_options .= "<option value='" . htmlspecialchars($row['staff_id']) . "'>" . htmlspecialchars($row['staff_name']) . "</option>"; } }
 
 $vehicle_options = "";
-$sql_vehicles = "SELECT vehicle_id, CONCAT(vehicle_name, ' (', vehicle_plate, ')') AS vehicle_display FROM vehicles ORDER BY vehicle_id";
+$sql_vehicles = "SELECT vehicle_id, CONCAT(vehicle_name, ' (', vehicle_plate, ')') AS vehicle_display FROM vehicles ORDER BY vehicle_name";
 $result_vehicles = $conn->query($sql_vehicles);
 if ($result_vehicles && $result_vehicles->num_rows > 0) { while($row = $result_vehicles->fetch_assoc()) { $vehicle_options .= "<option value='" . htmlspecialchars($row['vehicle_id']) . "'>" . htmlspecialchars($row['vehicle_display']) . "</option>"; } }
 ?>
@@ -58,9 +59,9 @@ if ($result_vehicles && $result_vehicles->num_rows > 0) { while($row = $result_v
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="<?php echo BASE_URL; ?>themes/modern_red_theme.css" rel="stylesheet">
     <style>
-        .action-buttons {
-            white-space: nowrap; /* แก้ไข: บังคับให้ปุ่มอยู่ในบรรทัดเดียวกัน */
-        }
+        .action-buttons { white-space: nowrap; }
+        .action-buttons button, .action-buttons a { margin: 0 2px; } 
+        .filter-card { box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
         .select2-container { width: 100% !important; }
         .select2-container .select2-selection--single { height: calc(1.5em + .75rem + 2px) !important; }
         .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: calc(1.5em + .75rem) !important; }
@@ -70,11 +71,31 @@ if ($result_vehicles && $result_vehicles->num_rows > 0) { while($row = $result_v
 <body>
     <div class="container-fluid">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="mb-0">รายการรอจัดคน/รถ (สถานะ: รับเรื่อง)</h2>
+            <h2 class="mb-0">รายการรอจัดคน/รถ</h2>
             <div>
                 <a href="<?php echo BASE_URL; ?>index.php" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left mr-1"></i>กลับหน้าหลัก</a>
                 <button class="btn btn-info btn-sm" onclick="location.reload();"><i class="fas fa-sync-alt"></i> รีเฟรช</button>
             </div>
+        </div>
+
+        <div class="p-3 border rounded bg-light mb-4 filter-card">
+            <form method="GET" class="mb-0">
+                <div class="form-row align-items-end">
+                    <div class="col-md-4">
+                        <label for="search_docno">ค้นหาเลขที่บิล</label>
+                        <div class="input-group">
+                             <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            </div>
+                            <input type="text" name="search_docno" id="search_docno" class="form-control" placeholder="กรอกเลขที่บิล..." value="<?php echo htmlspecialchars($search_docno); ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary" type="submit">ค้นหา</button>
+                        <a href="<?php echo BASE_URL; ?>pages/pending_assignment.php" class="btn btn-outline-secondary ml-2">ล้างค่า</a>
+                    </div>
+                </div>
+            </form>
         </div>
         
         <div class="table-responsive">

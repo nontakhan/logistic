@@ -1,28 +1,33 @@
 <?php
 // pages/pending_acknowledgement.php
 require_once '../php/check_session.php';
-// สิทธิ์ที่ต้องการสำหรับหน้านี้: ระดับ 2, 3, 4
 require_login([2, 3, 4]);
-
 require_once '../php/db_connect.php'; 
 
-// กำหนด BASE_URL (เพื่อให้ path ถูกต้องเสมอเมื่อเรียกจาก /pages/)
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
 $project_folder = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 $base_project_folder = str_replace('/pages', '', $project_folder);
 define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . $base_project_folder . '/');
 
-// --- สร้างเงื่อนไข SQL สำหรับกรองข้อมูล ---
-$where_clauses = ["o.status = 'รอรับเรื่อง'"]; // เงื่อนไขพื้นฐานของหน้านี้
+$search_docno = isset($_GET['search_docno']) ? trim($conn->real_escape_string($_GET['search_docno'])) : '';
+
+$where_clauses = ["o.status = 'รอรับเรื่อง'"];
 $params = [];
 $param_types = "";
 
-// เพิ่มเงื่อนไขกรองตามสาขาของผู้ใช้
 if (is_logged_in() && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned_transport_origin_id'])) {
     $where_clauses[] = "o.transport_origin_id = ?";
     $params[] = $_SESSION['assigned_transport_origin_id'];
     $param_types .= "i";
 }
+
+if (!empty($search_docno)) {
+    $where_clauses[] = "o.cssale_docno LIKE ?";
+    $search_like = "%" . $search_docno . "%";
+    $params[] = $search_like;
+    $param_types .= "s";
+}
+
 $sql_where = " WHERE " . implode(" AND ", $where_clauses);
 
 $sql = "SELECT o.order_id, o.cssale_docno, cs.custname, CONCAT_WS(', ', ori.moo, ori.mooban, ori.tambon, ori.amphoe, ori.province) AS customer_full_address, cs.shipaddr AS cssale_shipaddr, o.product_details, o.priority, o.order_date, t_org.origin_name AS transport_origin_name FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci LEFT JOIN origin ori ON o.customer_address_origin_id = ori.id LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id" . $sql_where . " ORDER BY CASE o.priority WHEN 'ด่วนที่สุด' THEN 1 WHEN 'ด่วน' THEN 2 WHEN 'ปกติ' THEN 3 ELSE 4 END ASC, o.order_date ASC, o.created_at ASC";
@@ -40,18 +45,17 @@ $result = $stmt->get_result();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>รายการรอรับเรื่อง</title>
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="<?php echo BASE_URL; ?>themes/modern_red_theme.css" rel="stylesheet">
     <style> 
-        .action-buttons {
-            white-space: nowrap; /* แก้ไข: บังคับให้ปุ่มอยู่ในบรรทัดเดียวกัน */
-        } 
+        .action-buttons button, .action-buttons a { margin: 0 2px; } 
+        .filter-card {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
     </style>
 </head>
 <body>
@@ -64,6 +68,26 @@ $result = $stmt->get_result();
             </div>
         </div>
         
+        <div class="p-3 border rounded bg-light mb-4 filter-card">
+            <form method="GET" class="mb-0">
+                <div class="form-row align-items-end">
+                    <div class="col-md-4">
+                        <label for="search_docno">ค้นหาเลขที่บิล</label>
+                        <div class="input-group">
+                             <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            </div>
+                            <input type="text" name="search_docno" id="search_docno" class="form-control" placeholder="กรอกเลขที่บิล..." value="<?php echo htmlspecialchars($search_docno); ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary" type="submit">ค้นหา</button>
+                        <a href="<?php echo BASE_URL; ?>pages/pending_acknowledgement.php" class="btn btn-outline-secondary ml-2">ล้างค่า</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
         <div class="table-responsive">
             <table class="table table-bordered table-hover table-striped">
                 <thead class="thead-light">
@@ -80,7 +104,7 @@ $result = $stmt->get_result();
                                 <td><?php echo htmlspecialchars($row['order_id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['cssale_docno']); ?></td>
                                 <td><?php echo htmlspecialchars($row['custname']); ?></td>
-                                <td><?php echo htmlspecialchars($row['cssale_shipaddr']); ?></td>
+                                <td><?php echo nl2br(htmlspecialchars($row['cssale_shipaddr'])); ?></td>
                                 <td><?php echo htmlspecialchars($row['transport_origin_name']); ?></td>
                                 <td><?php echo date("d/m/Y", strtotime($row['order_date'])); ?></td>
                                 <td><?php echo htmlspecialchars($row['priority']); ?></td>
@@ -93,13 +117,12 @@ $result = $stmt->get_result();
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="9" class="text-center">ไม่มีรายการที่รอรับเรื่อง</td></tr>
+                        <tr><td colspan="9" class="text-center">ไม่พบข้อมูล</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </div>
-
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
