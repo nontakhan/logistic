@@ -127,7 +127,7 @@ $conn->close();
             opacity: 0.3;
         }
 
-        .dashboard-header .container-fluid {
+        .dashboard-header .container {
             position: relative;
             z-index: 2;
         }
@@ -424,23 +424,7 @@ $conn->close();
                 font-size: 1.5rem;
             }
         }
-
-        /* Loading Animation */
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* No Data Message */
+        
         .no-data-message {
             color: var(--text-muted);
             font-style: italic;
@@ -598,13 +582,13 @@ $conn->close();
             </div>
         </div>
     </div>
-
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script> 
     <script>
         $(document).ready(function(){
+            // *** แก้ไข: เพิ่ม JavaScript สำหรับ Auto-Refresh กลับเข้ามา ***
             let statusChartInstance;
             let dailyOrdersChartInstance;
 
@@ -616,95 +600,12 @@ $conn->close();
                     container.find('canvas').show();
                     const labels = chartData.map(item => item.label);
                     const dataValues = chartData.map(item => item.value);
-                    
-                    // Modern color scheme for status chart
-                    const colorMap = {
-                        'รอรับเรื่อง': {
-                            bg: 'rgba(220, 38, 38, 0.8)',
-                            border: 'rgba(220, 38, 38, 1)',
-                            hover: 'rgba(220, 38, 38, 0.9)'
-                        },
-                        'รับเรื่อง': {
-                            bg: 'rgba(59, 130, 246, 0.8)',
-                            border: 'rgba(59, 130, 246, 1)',
-                            hover: 'rgba(59, 130, 246, 0.9)'
-                        },
-                        'รอส่งของ': {
-                            bg: 'rgba(245, 158, 11, 0.8)',
-                            border: 'rgba(245, 158, 11, 1)',
-                            hover: 'rgba(245, 158, 11, 0.9)'
-                        },
-                        'ส่งของแล้ว': {
-                            bg: 'rgba(16, 185, 129, 0.8)',
-                            border: 'rgba(16, 185, 129, 1)',
-                            hover: 'rgba(16, 185, 129, 0.9)'
-                        },
-                        'ยกเลิก': {
-                            bg: 'rgba(107, 114, 128, 0.8)',
-                            border: 'rgba(107, 114, 128, 1)',
-                            hover: 'rgba(107, 114, 128, 0.9)'
-                        },
-                        'default': {
-                            bg: 'rgba(155, 89, 182, 0.8)',
-                            border: 'rgba(155, 89, 182, 1)',
-                            hover: 'rgba(155, 89, 182, 0.9)'
-                        }
-                    };
-                    
-                    const bgColors = labels.map(label => colorMap[label]?.bg || colorMap['default'].bg);
-                    const borderColors = labels.map(label => colorMap[label]?.border || colorMap['default'].border);
-                    const hoverColors = labels.map(label => colorMap[label]?.hover || colorMap['default'].hover);
-                    
+                    const colorMap = {'รอรับเรื่อง':"rgba(231,76,60,0.8)", 'รับเรื่อง':"rgba(59,130,246,0.8)", 'รอส่งของ':"rgba(245,158,11,0.8)", 'ส่งของแล้ว':"rgba(16,185,129,0.8)", 'ยกเลิก':"rgba(107,114,128,0.8)", 'default':"rgba(155,89,182,0.8)"};
+                    const bgColors = labels.map(label => colorMap[label] || colorMap['default']);
                     const config = {
                         type: 'doughnut',
-                        data: { 
-                            labels: labels, 
-                            datasets: [{ 
-                                label: 'จำนวนรายการ', 
-                                data: dataValues, 
-                                backgroundColor: bgColors, 
-                                borderColor: borderColors,
-                                hoverBackgroundColor: hoverColors,
-                                borderWidth: 2,
-                                hoverBorderWidth: 3
-                            }] 
-                        },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false,
-                            cutout: '60%',
-                            plugins: { 
-                                legend: { 
-                                    position: 'bottom',
-                                    labels: {
-                                        padding: 20,
-                                        usePointStyle: true,
-                                        font: {
-                                            size: 14,
-                                            family: 'Sarabun'
-                                        }
-                                    }
-                                }, 
-                                title: { 
-                                    display: false 
-                                },
-                                tooltip: {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                    titleColor: '#fff',
-                                    bodyColor: '#fff',
-                                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                                    borderWidth: 1,
-                                    cornerRadius: 8,
-                                    displayColors: true
-                                }
-                            },
-                            animation: {
-                                animateRotate: true,
-                                animateScale: true,
-                                duration: 1000,
-                                easing: 'easeOutQuart'
-                            }
-                        }
+                        data: { labels: labels, datasets: [{ label: 'จำนวนรายการ', data: dataValues, backgroundColor: bgColors, borderColor: 'white', borderWidth: 2, hoverOffset: 4 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, title: { display: false } } }
                     };
                     statusChartInstance = new Chart(document.getElementById('statusChart'), config);
                 } else {
@@ -723,77 +624,10 @@ $conn->close();
                     container.find('canvas').show();
                     const labels = chartData.map(item => item.label);
                     const dataValues = chartData.map(item => item.value);
-                    
                     const config = {
                         type: 'bar',
-                        data: { 
-                            labels: labels, 
-                            datasets: [{ 
-                                label: 'จำนวนรายการ', 
-                                data: dataValues, 
-                                backgroundColor: 'rgba(220, 38, 38, 0.8)', 
-                                borderColor: 'rgba(220, 38, 38, 1)', 
-                                borderWidth: 2,
-                                borderRadius: 8,
-                                borderSkipped: false,
-                                hoverBackgroundColor: 'rgba(220, 38, 38, 0.9)',
-                                hoverBorderColor: 'rgba(185, 28, 28, 1)'
-                            }] 
-                        },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            scales: { 
-                                y: { 
-                                    beginAtZero: true, 
-                                    ticks: { 
-                                        stepSize: 1,
-                                        font: {
-                                            family: 'Sarabun',
-                                            size: 12
-                                        },
-                                        color: '#6b7280'
-                                    },
-                                    grid: {
-                                        color: 'rgba(0, 0, 0, 0.05)',
-                                        drawBorder: false
-                                    }
-                                },
-                                x: {
-                                    ticks: {
-                                        font: {
-                                            family: 'Sarabun',
-                                            size: 12
-                                        },
-                                        color: '#6b7280'
-                                    },
-                                    grid: {
-                                        display: false
-                                    }
-                                }
-                            }, 
-                            plugins: { 
-                                legend: { 
-                                    display: false 
-                                }, 
-                                title: { 
-                                    display: false 
-                                },
-                                tooltip: {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                    titleColor: '#fff',
-                                    bodyColor: '#fff',
-                                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                                    borderWidth: 1,
-                                    cornerRadius: 8,
-                                    displayColors: false
-                                }
-                            },
-                            animation: {
-                                duration: 1000,
-                                easing: 'easeOutQuart'
-                            }
-                        }
+                        data: { labels: labels, datasets: [{ label: 'จำนวนรายการ', data: dataValues, backgroundColor: 'rgba(220, 38, 38, 0.8)', borderColor: 'rgba(220, 38, 38, 1)', borderWidth: 2, borderRadius: 8 }] },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false }, title: { display: false } } }
                     };
                     dailyOrdersChartInstance = new Chart(document.getElementById('dailyOrdersChart'), config);
                 } else {
@@ -805,39 +639,12 @@ $conn->close();
             }
             
             function updateDashboardData(data) {
-                // Animate number changes
-                animateValue('count-pending-ack', parseInt($('#count-pending-ack').text()), data.big_numbers.pending_ack);
-                animateValue('count-pending-assign', parseInt($('#count-pending-assign').text()), data.big_numbers.pending_assign);
-                animateValue('count-pending-delivery', parseInt($('#count-pending-delivery').text()), data.big_numbers.pending_delivery);
-                animateValue('count-delivered-today', parseInt($('#count-delivered-today').text()), data.big_numbers.delivered_today);
-                
+                $('#count-pending-ack').text(data.big_numbers.pending_ack);
+                $('#count-pending-assign').text(data.big_numbers.pending_assign);
+                $('#count-pending-delivery').text(data.big_numbers.pending_delivery);
+                $('#count-delivered-today').text(data.big_numbers.delivered_today);
                 createOrUpdateStatusChart(data.status_chart_data);
                 createOrUpdateDailyChart(data.daily_chart_data);
-            }
-
-            function animateValue(elementId, start, end) {
-                const element = document.getElementById(elementId);
-                const duration = 1000;
-                const startTime = performance.now();
-                
-                function updateValue(currentTime) {
-                    const elapsed = currentTime - startTime;
-                    const progress = Math.min(elapsed / duration, 1);
-                    
-                    // Easing function
-                    const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-                    const current = Math.round(start + (end - start) * easeOutQuart);
-                    
-                    element.textContent = current;
-                    
-                    if (progress < 1) {
-                        requestAnimationFrame(updateValue);
-                    }
-                }
-                
-                if (start !== end) {
-                    requestAnimationFrame(updateValue);
-                }
             }
 
             function fetchDashboardData() {
@@ -851,56 +658,17 @@ $conn->close();
                         }
                     },
                     error: function() {
-                        // Silently handle errors
+                        // console.error("Could not fetch dashboard data.");
                     }
                 });
             }
 
-            // Add click animation to stat cards
-            $('.stat-card').click(function() {
-                $(this).addClass('animate__animated animate__pulse');
-                setTimeout(() => {
-                    $(this).removeClass('animate__animated animate__pulse');
-                }, 1000);
-            });
-
-            // Add loading state to buttons
-            $('.btn').click(function() {
-                const $btn = $(this);
-                const originalText = $btn.html();
-                $btn.html('<span class="loading-spinner mr-2"></span>กำลังโหลด...');
-                
-                setTimeout(() => {
-                    $btn.html(originalText);
-                }, 2000);
-            });
-
-            // Initial chart creation with animation
-            setTimeout(() => {
-                createOrUpdateStatusChart(<?php echo $status_chart_json; ?>);
-                createOrUpdateDailyChart(<?php echo $daily_orders_chart_json; ?>);
-            }, 500);
+            // Initial chart creation
+            createOrUpdateStatusChart(<?php echo $status_chart_json; ?>);
+            createOrUpdateDailyChart(<?php echo $daily_orders_chart_json; ?>);
             
-            // Auto-refresh data every 5 seconds
-            setInterval(fetchDashboardData, 5000);
-
-            // Add parallax effect to header
-            $(window).scroll(function() {
-                const scrolled = $(this).scrollTop();
-                const parallax = $('.dashboard-header');
-                const speed = scrolled * 0.5;
-                parallax.css('transform', 'translateY(' + speed + 'px)');
-            });
-
-            // Add fade-in animation on load
-            $('.stat-card, .chart-container').each(function(index) {
-                $(this).css('opacity', '0').css('transform', 'translateY(30px)');
-                $(this).delay(index * 100).animate({
-                    opacity: 1
-                }, 600, function() {
-                    $(this).css('transform', 'translateY(0)');
-                });
-            });
+            // Auto-refresh data every 3 seconds
+            setInterval(fetchDashboardData, 3000);
         });
     </script>
 </body>
