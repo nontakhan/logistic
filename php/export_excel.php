@@ -2,9 +2,9 @@
 // php/export_excel.php
 
 // 1. Includes and Session Check
-require_once 'check_session.php';
-require_login([2, 3, 4]);
-require_once 'db_connect.php';
+require_once __DIR__ . '/check_session.php';
+require_login([1, 2, 3, 4]); // อนุญาตให้ทุกสิทธิ์ที่ login แล้วสามารถ export ได้
+require_once __DIR__ . '/db_connect.php';
 
 // 2. Get filter parameters from GET request
 $search_term = isset($_GET['search_term']) ? trim($conn->real_escape_string($_GET['search_term'])) : '';
@@ -25,10 +25,10 @@ if (is_logged_in() && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned
 }
 
 if (!empty($search_term)) {
-    $where_clauses[] = "(o.cssale_docno LIKE ? OR cs.custname LIKE ?)";
+    $where_clauses[] = "(o.cssale_docno LIKE ? OR cs.custname LIKE ? OR cs.lname LIKE ?)";
     $search_like = "%" . $search_term . "%";
-    array_push($params, $search_like, $search_like);
-    $param_types .= "ss";
+    array_push($params, $search_like, $search_like, $search_like);
+    $param_types .= "sss";
 }
 if (!empty($filter_status)) {
     $where_clauses[] = "o.status = ?"; 
@@ -36,9 +36,9 @@ if (!empty($filter_status)) {
     $param_types .= "s"; 
 }
 if (!empty($filter_salesman)) {
-    $where_clauses[] = "cu.id = ?"; 
+    $where_clauses[] = "cs.code = ?"; 
     $params[] = $filter_salesman; 
-    $param_types .= "i";
+    $param_types .= "s";
 }
 if (!empty($filter_date_start)) {
     $where_clauses[] = "DATE(o.updated_at) >= ?";
@@ -57,18 +57,18 @@ if (!empty($where_clauses)) {
 }
 
 // 4. Fetch ALL filtered data (without pagination)
+// *** แก้ไข: นำการ JOIN กับ csuser ออก และดึงข้อมูลพนักงานจาก cssale โดยตรง ***
 $sql_data = "SELECT 
                 o.cssale_docno, 
                 cs.custname,
-                CONCAT(cu.id, ' - ', cu.lname) AS salesman_info,
+                CONCAT(cs.code, ' - ', cs.lname) AS salesman_info,
                 t_org.origin_name AS transport_origin_name,
                 cs.shipaddr, 
                 o.status, 
                 o.updated_at
             FROM orders o
             LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci
-            LEFT JOIN csuser cu ON cs.salesman = cu.id
-            LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id" 
+            LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id"
             . $sql_where . " ORDER BY o.updated_at DESC";
 
 $stmt = $conn->prepare($sql_data);
