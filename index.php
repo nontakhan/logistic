@@ -440,31 +440,6 @@ $conn->close();
             to { transform: rotate(360deg); }
         }
 
-        /* Floating Action Button */
-        .fab {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-red-light) 100%);
-            color: white;
-            border: none;
-            box-shadow: var(--shadow-xl);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            transition: var(--transition);
-            z-index: 1000;
-        }
-
-        .fab:hover {
-            transform: scale(1.1);
-            box-shadow: 0 25px 30px -10px rgba(220, 38, 38, 0.3);
-        }
-
         /* No Data Message */
         .no-data-message {
             color: var(--text-muted);
@@ -623,13 +598,6 @@ $conn->close();
             </div>
         </div>
     </div>
-
-    <!-- Floating Action Button -->
-    <?php if (is_logged_in() && has_role([1, 4])): ?>
-    <button class="fab" onclick="window.location.href='<?php echo BASE_URL; ?>pages/add_order_form.php'" title="เพิ่มรายการใหม่">
-        <i class="fas fa-plus"></i>
-    </button>
-    <?php endif; ?>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
