@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 
 require_once 'check_session.php';
 // สิทธิ์ที่ต้องการสำหรับหน้านี้: ทุกคนที่ login แล้วสามารถใช้ได้
-require_login([1, 4]);
+require_login([1, 2, 4]);
 require_once 'db_connect.php';
 
 $response = ['status' => 'error', 'message' => 'มีบางอย่างผิดพลาด', 'errors' => []];

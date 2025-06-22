@@ -2,7 +2,7 @@
 // pages/add_order_form.php
 require_once '../php/check_session.php';
 // สิทธิ์ที่ต้องการสำหรับหน้านี้: ระดับ 1 และ 4 (Admin)
-require_login([1, 4]);
+require_login([1, 2, 4]);
 
 require_once '../php/db_connect.php'; 
 
