@@ -529,7 +529,7 @@ $conn->close();
                         <i class="fas fa-search-dollar"></i>เช็คราคา
                     </a>
                 </div>
-                <?php if (has_role([1, 4])): ?>
+                <?php if (has_role([1, 2, 4])): ?>
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
                     <a href="<?php echo BASE_URL; ?>pages/add_order_form.php" class="btn btn-primary btn-block">
                         <i class="fas fa-plus-circle"></i>เพิ่มรายการ
