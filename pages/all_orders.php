@@ -1,16 +1,26 @@
 <?php
 // pages/all_orders.php
 require_once '../php/check_session.php';
+// สิทธิ์ที่ต้องการสำหรับหน้านี้
 require_login([1, 2, 3, 4]);
+
 require_once '../php/db_connect.php';
+
+// กำหนด BASE_URL
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
 $project_folder = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 $base_project_folder = str_replace('/pages', '', $project_folder);
 define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . $base_project_folder . '/');
+
+
 $is_ajax_request = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest');
+
+// --- Pagination Settings ---
 $items_per_page = 20;
 $current_page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($current_page - 1) * $items_per_page;
+
+// --- ดึงข้อมูลสำหรับ Filters ---
 $salesman_options_filter = "<option value=''>พนักงานขายทั้งหมด</option>";
 $sql_salesman_filter = "SELECT DISTINCT code, lname FROM cssale WHERE code IS NOT NULL AND lname IS NOT NULL AND lname != '' ORDER BY lname ASC";
 $result_salesman_filter = $conn->query($sql_salesman_filter);
@@ -20,19 +30,37 @@ if ($result_salesman_filter && $result_salesman_filter->num_rows > 0) {
         $salesman_options_filter .= "<option value='" . htmlspecialchars($row['code']) . "' $selected_salesman>" . htmlspecialchars($row['code'] . ' - ' . $row['lname']) . "</option>";
     }
 }
+$transport_origin_options_filter = "<option value=''>ต้นทางทั้งหมด</option>";
+$sql_transport_filter = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY origin_name";
+$result_transport_filter = $conn->query($sql_transport_filter);
+if ($result_transport_filter && $result_transport_filter->num_rows > 0) {
+    while($row = $result_transport_filter->fetch_assoc()) {
+        $selected_transport = (isset($_GET['filter_transport_origin']) && $_GET['filter_transport_origin'] == $row['transport_origin_id']) ? 'selected' : '';
+        $transport_origin_options_filter .= "<option value='" . htmlspecialchars($row['transport_origin_id']) . "' $selected_transport>" . htmlspecialchars($row['origin_name']) . "</option>";
+    }
+}
+
+
+// --- จัดการการค้นหาและกรอง ---
 $search_term = isset($_GET['search_term']) ? trim($conn->real_escape_string($_GET['search_term'])) : '';
 $filter_status = isset($_GET['filter_status']) ? $conn->real_escape_string($_GET['filter_status']) : '';
 $filter_salesman = isset($_GET['filter_salesman']) ? $conn->real_escape_string($_GET['filter_salesman']) : '';
+$filter_transport_origin = isset($_GET['filter_transport_origin']) ? $conn->real_escape_string($_GET['filter_transport_origin']) : '';
 $filter_date_start = isset($_GET['filter_date_start']) && !empty($_GET['filter_date_start']) ? $conn->real_escape_string($_GET['filter_date_start']) : '';
 $filter_date_end = isset($_GET['filter_date_end']) && !empty($_GET['filter_date_end']) ? $conn->real_escape_string($_GET['filter_date_end']) : '';
+
 $where_clauses = [];
 $params = []; 
 $param_types = ""; 
-if (is_logged_in() && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned_transport_origin_id'])) {
+
+// กรองตามสาขาของผู้ใช้ (ยกเว้น Admin และ สิทธิ์ระดับ 1)
+if (is_logged_in() && !in_array($_SESSION['role_level'], [1, 4]) && !empty($_SESSION['assigned_transport_origin_id'])) {
     $where_clauses[] = "o.transport_origin_id = ?";
     $params[] = $_SESSION['assigned_transport_origin_id'];
     $param_types .= "i";
 }
+
+// สร้าง query string สำหรับ pagination links
 $query_string_params = [];
 if (!empty($search_term)) {
     $where_clauses[] = "(o.cssale_docno LIKE ? OR cs.custname LIKE ? OR cs.lname LIKE ?)";
@@ -53,6 +81,13 @@ if (!empty($filter_salesman)) {
     $param_types .= "s"; 
     $query_string_params['filter_salesman'] = $filter_salesman;
 }
+// *** แก้ไข: อนุญาตให้สิทธิ์ระดับ 1 และ 4 ใช้ฟิลเตอร์นี้ได้ ***
+if (is_logged_in() && in_array($_SESSION['role_level'], [1, 4]) && !empty($filter_transport_origin)) {
+    $where_clauses[] = "o.transport_origin_id = ?";
+    $params[] = $filter_transport_origin;
+    $param_types .= "i";
+    $query_string_params['filter_transport_origin'] = $filter_transport_origin;
+}
 if (!empty($filter_date_start)) {
     $where_clauses[] = "DATE(o.updated_at) >= ?";
     $params[] = $filter_date_start;
@@ -65,11 +100,15 @@ if (!empty($filter_date_end)) {
     $param_types .= "s";
     $query_string_params['filter_date_end'] = $filter_date_end;
 }
+
 $base_query_string = http_build_query($query_string_params);
+
 $sql_where = "";
 if (!empty($where_clauses)) {
     $sql_where = " WHERE " . implode(" AND ", $where_clauses);
 }
+
+// --- Count total items for pagination ---
 $sql_count_base = "SELECT COUNT(o.order_id) as total_count FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci";
 $sql_count_final = $sql_count_base . $sql_where;
 $stmt_count = $conn->prepare($sql_count_final);
@@ -81,6 +120,8 @@ $result_count = $stmt_count->get_result();
 $total_items = $result_count->fetch_assoc()['total_count'];
 $total_pages = ceil($total_items / $items_per_page);
 $stmt_count->close();
+
+// --- Fetch data for the current page ---
 $sql_data_base = "SELECT 
                     o.order_id, o.cssale_docno, cs.custname, cs.shipaddr, o.status, o.updated_at,
                     cs.code as salesman_code, cs.lname as salesman_name,
@@ -105,6 +146,7 @@ if ($result_orders_mysqli) {
     }
 }
 $stmt_data->close();
+
 if ($is_ajax_request) {
     header('Content-Type: application/json');
     echo json_encode([
@@ -123,6 +165,7 @@ if ($is_ajax_request) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ติดตามรายการทั้งหมด</title>
+    
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚚</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -171,10 +214,14 @@ if ($is_ajax_request) {
                         <?php echo $salesman_options_filter; ?>
                     </select>
                 </div>
+                <?php if (is_logged_in() && in_array($_SESSION['role_level'], [1, 4])): ?>
                 <div class="form-group col-md-3">
-                    <label for="filter_date_start">อัปเดตจากวันที่</label>
-                    <input type="date" class="form-control" id="filter_date_start" name="filter_date_start" value="<?php echo htmlspecialchars($filter_date_start); ?>">
+                    <label for="filter_transport_origin">ต้นทางขนส่ง</label>
+                    <select class="form-control select2-filter" id="filter_transport_origin" name="filter_transport_origin">
+                        <?php echo $transport_origin_options_filter; ?>
+                    </select>
                 </div>
+                <?php endif; ?>
                 <div class="form-group col-md-2">
                     <label for="filter_status">สถานะ</label>
                     <select class="form-control select2-filter" id="filter_status" name="filter_status">
@@ -188,7 +235,15 @@ if ($is_ajax_request) {
                 </div>
             </div>
              <div class="form-row">
-                <div class="col-12 text-right">
+                <div class="col-md-3">
+                    <label for="filter_date_start">อัปเดตจากวันที่</label>
+                    <input type="date" class="form-control" id="filter_date_start" name="filter_date_start" value="<?php echo htmlspecialchars($filter_date_start); ?>">
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="filter_date_end">ถึงวันที่</label>
+                    <input type="date" class="form-control" id="filter_date_end" name="filter_date_end" value="<?php echo htmlspecialchars($filter_date_end); ?>">
+                </div>
+                <div class="col-md-6 text-right align-self-end">
                     <a href="#" id="export-btn" class="btn btn-success"><i class="fas fa-file-excel"></i> Export to Excel</a>
                     <a href="<?php echo BASE_URL; ?>pages/all_orders.php" class="btn btn-danger ml-2"><i class="fas fa-undo"></i> ล้างค่า</a>
                 </div>
