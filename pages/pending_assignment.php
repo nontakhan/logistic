@@ -50,7 +50,11 @@ if ($result_vehicles && $result_vehicles->num_rows > 0) { while($row = $result_v
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>รายการรอจัดคน/รถ</title>
     <!-- *** เพิ่ม: Favicon *** -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚚</text></svg>">
+    <meta name="theme-color" content="#dc2626">
+    <link rel="manifest" href="<?php echo BASE_URL; ?>manifest.json">
+
+    <link rel="icon" href="<?php echo BASE_URL; ?>assets/images/icon-192x192.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="<?php echo BASE_URL; ?>assets/images/icon-192x192.png">
     
     
     <link rel="preconnect" href="https://fonts.googleapis.com">

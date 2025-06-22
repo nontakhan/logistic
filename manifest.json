@@ -1,0 +1,22 @@
+{
+  "name": "NR Logistics Tracking",
+  "short_name": "NR Logistics",
+  "description": "ระบบติดตามการจัดส่งสินค้าของ NR Logistics",
+  "start_url": "/logistic/index.php",
+  "display": "standalone",
+  "background_color": "#dc2626",
+  "theme_color": "#dc2626",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logistic/assets/images/icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/logistic/assets/images/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
