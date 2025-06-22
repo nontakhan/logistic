@@ -63,7 +63,7 @@ if (is_logged_in() && !in_array($_SESSION['role_level'], [1, 4]) && !empty($_SES
 // สร้าง query string สำหรับ pagination links
 $query_string_params = [];
 if (!empty($search_term)) {
-    $where_clauses[] = "(o.cssale_docno LIKE ? OR cs.custname LIKE ? OR cs.lname LIKE ?)";
+    $where_clauses[] = "(o.cssale_docno LIKE ? OR cs.custname LIKE ? OR cs.salesman LIKE ?)";
     $search_like = "%" . $search_term . "%";
     array_push($params, $search_like, $search_like, $search_like);
     $param_types .= "sss";
@@ -189,6 +189,10 @@ if ($is_ajax_request) {
         .table-hover tbody tr.status-รอส่งของ:hover, .table-hover tbody tr.status-รอส่งของ { background-color: rgba(255, 199, 0, 0.08); }
         .table-hover tbody tr.status-ยกเลิก { text-decoration: line-through; color: #a1a5b7; }
         .table-hover tbody tr.status-ยกเลิก:hover, .table-hover tbody tr.status-ยกเลิก { background-color: #f5f8fa; }
+        .modal-body dl dt { font-weight: 600; color: var(--text-muted); }
+        .modal-body dl dd { color: var(--text-dark); }
+        .details-section { margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+        .details-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0;}
     </style>
 </head>
 <body>
@@ -261,6 +265,7 @@ if ($is_ajax_request) {
                         <th>สถานที่ส่ง</th>
                         <th class="text-center">สถานะ</th>
                         <th style="white-space: nowrap;">อัปเดตล่าสุด</th>
+                        <th>ดำเนินการ</th>
                     </tr>
                 </thead>
                 <tbody id="ordersTableBody">
@@ -274,6 +279,26 @@ if ($is_ajax_request) {
             <nav id="paginationContainer"></nav>
         </div>
     </div>
+    
+    <div class="modal fade" id="orderDetailsModal" tabindex="-1" role="dialog" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="orderDetailsModalLabel">รายละเอียดรายการ</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-details-content">
+                    <p class="text-center">กำลังโหลดข้อมูล...</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
@@ -317,6 +342,11 @@ if ($is_ajax_request) {
                         <td>${row.shipaddr || '-'}</td>
                         <td class="text-center">${renderStatusBadge(row.status)}</td>
                         <td style="white-space: nowrap;">${row.updated_at_formatted || '-'}</td>
+                        <td>
+                            <button class="btn btn-info btn-sm view-details-btn" data-orderid="${row.order_id}" title="ดูรายละเอียด">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
                     </tr>
                 `;
             }
@@ -360,14 +390,14 @@ if ($is_ajax_request) {
                         if (response.orders && response.orders.length > 0) {
                             response.orders.forEach(row => $('#ordersTableBody').append(buildTableRow(row)));
                         } else {
-                            $('#ordersTableBody').append('<tr><td colspan="7" class="text-center py-5">ไม่พบข้อมูลตามเงื่อนไขที่ระบุ</td></tr>');
+                            $('#ordersTableBody').append('<tr><td colspan="8" class="text-center py-5">ไม่พบข้อมูลตามเงื่อนไขที่ระบุ</td></tr>');
                         }
                         $('#items-count-info').html(`<small>พบทั้งหมด ${response.total_items} รายการ (หน้า ${response.current_page} จาก ${response.total_pages})</small>`);
                         renderPagination(response.total_pages, response.current_page);
                         updateExportLink();
                     },
                     error: function() {
-                        $('#ordersTableBody').html('<tr><td colspan="7" class="text-center py-5 text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>');
+                        $('#ordersTableBody').html('<tr><td colspan="8" class="text-center py-5 text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>');
                     },
                     complete: function() {
                         $('.loading-overlay').hide();
@@ -396,6 +426,66 @@ if ($is_ajax_request) {
                 if (page && !$(this).closest('.page-item').hasClass('disabled')) {
                     fetchData(page);
                 }
+            });
+
+            $('#ordersTableBody').on('click', '.view-details-btn', function() {
+                const orderId = $(this).data('orderid');
+                const modalContent = $('#modal-details-content');
+                const modalTitle = $('#orderDetailsModalLabel');
+                
+                modalContent.html('<p class="text-center">กำลังโหลดข้อมูล...</p>');
+                modalTitle.text('รายละเอียดรายการ');
+                $('#orderDetailsModal').modal('show');
+
+                $.ajax({
+                    url: '<?php echo BASE_URL; ?>php/get_order_details.php',
+                    type: 'GET',
+                    data: { id: orderId },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.status === 'success' && response.data) {
+                            const d = response.data;
+                            modalTitle.text('รายละเอียดรายการสำหรับบิล: ' + (d.cssale_docno || 'N/A'));
+                            
+                            const html = `
+                                <div class="details-section">
+                                    <h5>ข้อมูลการจัดส่ง</h5>
+                                    <dl class="row">
+                                        <dt class="col-sm-4">ID ติดตาม:</dt><dd class="col-sm-8">${d.order_id}</dd>
+                                        <dt class="col-sm-4">สถานะ:</dt><dd class="col-sm-8">${renderStatusBadge(d.status)}</dd>
+                                        <dt class="col-sm-4">ความเร่งด่วน:</dt><dd class="col-sm-8">${d.priority || '-'}</dd>
+                                        <dt class="col-sm-4">วันที่สร้างรายการ:</dt><dd class="col-sm-8">${new Date(d.order_date).toLocaleDateString('th-TH')}</dd>
+                                        <dt class="col-sm-4">อัปเดตล่าสุด:</dt><dd class="col-sm-8">${new Date(d.updated_at).toLocaleString('th-TH')}</dd>
+                                        <dt class="col-sm-4">หมายเหตุ:</dt><dd class="col-sm-8">${d.product_details || '-'}</dd>
+                                    </dl>
+                                </div>
+                                <div class="details-section">
+                                    <h5>ข้อมูลลูกค้าและพนักงานขาย</h5>
+                                    <dl class="row">
+                                        <dt class="col-sm-4">ชื่อลูกค้า:</dt><dd class="col-sm-8">${d.custname || '-'}</dd>
+                                        <dt class="col-sm-4">สถานที่ส่ง:</dt><dd class="col-sm-8">${d.shipaddr || '-'}</dd>
+                                        <dt class="col-sm-4">พนักงานขาย:</dt><dd class="col-sm-8">${d.salesman_code ? `${d.salesman_code} - ${d.salesman_name}` : '-'}</dd>
+                                    </dl>
+                                </div>
+                                <div class="details-section">
+                                    <h5>ข้อมูลการขนส่ง</h5>
+                                    <dl class="row">
+                                        <dt class="col-sm-4">ต้นทางขนส่ง:</dt><dd class="col-sm-8">${d.origin_name || '-'}</dd>
+                                        <dt class="col-sm-4">พนักงานส่งของ:</dt><dd class="col-sm-8">${d.staff_name || '-'}</dd>
+                                        <dt class="col-sm-4">เบอร์โทรพนักงานส่ง:</dt><dd class="col-sm-8">${d.staff_phone || '-'}</dd>
+                                        <dt class="col-sm-4">รถที่ใช้:</dt><dd class="col-sm-8">${d.vehicle_name ? `${d.vehicle_name} (${d.vehicle_plate})` : '-'}</dd>
+                                    </dl>
+                                </div>
+                            `;
+                            modalContent.html(html);
+                        } else {
+                            modalContent.html('<p class="text-center text-danger">ไม่สามารถโหลดข้อมูลได้: ' + response.message + '</p>');
+                        }
+                    },
+                    error: function() {
+                        modalContent.html('<p class="text-center text-danger">เกิดข้อผิดพลาดในการเชื่อมต่อ</p>');
+                    }
+                });
             });
         });
     </script>
