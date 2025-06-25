@@ -1,4 +1,19 @@
 <?php
+
+// --- เพิ่มส่วนนี้: ตั้งค่า Session Timeout ---
+
+// กำหนดระยะเวลาของ Session เป็น 8 ชั่วโมง (8 ชั่วโมง * 60 นาที * 60 วินาที)
+$session_lifetime = 28800;
+
+// ตั้งค่า gc_maxlifetime (ระยะเวลาที่ server จะเก็บ session ที่ไม่มีการใช้งาน)
+ini_set('session.gc_maxlifetime', $session_lifetime);
+
+// ตั้งค่า cookie_lifetime (เพื่อให้ cookie ของ session ในเบราว์เซอร์มีอายุเท่ากัน)
+// การตั้งค่านี้จะช่วยให้ session ยังคงอยู่แม้จะปิดเบราว์เซอร์แล้วเปิดใหม่
+ini_set('session.cookie_lifetime', $session_lifetime);
+
+// --- สิ้นสุดส่วนที่เพิ่ม ---
+
 // php/check_session.php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
