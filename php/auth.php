@@ -18,7 +18,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $stmt = $conn->prepare($sql);
     
     if ($stmt === false) {
-        // Handle SQL prepare error
         error_log("SQL prepare failed: " . $conn->error);
         $_SESSION['login_error'] = "เกิดข้อผิดพลาดในระบบ";
         header("Location: ../login.php");
@@ -33,15 +32,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $user = $result->fetch_assoc();
         
         if (password_verify($password, $user['password_hash'])) {
-            // รหัสผ่านถูกต้อง, สร้าง session
-            session_regenerate_id(true); // ป้องกัน session fixation
+            session_regenerate_id(true); 
             
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['role_level'] = (int)$user['role_level'];
-            // เก็บ ID สาขาของผู้ใช้ไว้ใน session
-            // ใช้ (int) หรือปล่อยเป็น NULL ถ้าค่าใน DB เป็น NULL
             $_SESSION['assigned_transport_origin_id'] = $user['assigned_transport_origin_id'] ? (int)$user['assigned_transport_origin_id'] : null;
             
             unset($_SESSION['login_error']);
@@ -50,7 +46,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
-    // ถ้าไม่สำเร็จ
     $_SESSION['login_error'] = "ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง";
     header("Location: ../login.php");
     exit();

@@ -119,22 +119,31 @@ a:hover {
 .table td, .table th {
     border-color: var(--border-color);
 }
-
-/* *** เพิ่ม: สไตล์สำหรับปุ่มดำเนินการในตาราง *** */
+.no-wrap {
+    white-space: nowrap;
+}
 .action-buttons {
-    white-space: nowrap; /* บังคับให้ปุ่มอยู่ในบรรทัดเดียวกัน */
+    white-space: nowrap; 
 }
 .action-buttons .btn {
-    margin: 0 2px; /* เพิ่มระยะห่างเล็กน้อยระหว่างปุ่ม */
+    margin: 0 2px;
 }
 
-/* --- Status & Priority Styles --- */
+/* --- Status & Priority Specific Styles --- */
 .status-รอรับเรื่อง { background-color: #fff0f0; color: var(--primary-red-darker); border-left: 3px solid var(--primary-red-darker); }
 .status-รับเรื่อง { background-color: #e6fff0; color: #28a745; border-left: 3px solid #28a745; }
 .status-รอส่งของ { background-color: #e3f2fd; color: #007bff; border-left: 3px solid #007bff; }
 .status-ส่งของแล้ว { background-color: #e8f5e9; color: #155724; font-weight: bold; border-left: 3px solid #155724;}
-.status-ยกเลิก { background-color: #f8f9fa !important; color: #6c757d; text-decoration: line-through; }
-.status-ยกเลิก a, .status-ยกเลิก button { pointer-events: none; opacity: 0.65; }
+.status-ยกเลิก {
+    background-color: #f8f9fa !important;
+    color: #6c757d;
+    text-decoration: line-through;
+}
+/* *** แก้ไข: นำส่วนที่ปิดการใช้งานปุ่มออก *** */
+/* .status-ยกเลิก a, .status-ยกเลิก button {
+    pointer-events: none; 
+    opacity: 0.65;
+} */
 
 .priority-ด่วนที่สุด { color: var(--primary-red-darker); font-weight: bold; }
 .priority-ด่วน { color: #fd7e14; font-weight: bold; }
