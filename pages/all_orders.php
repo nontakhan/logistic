@@ -173,7 +173,7 @@ if ($is_ajax_request) {
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link href="<?php echo BASE_URL; ?>themes/modern_red_theme.css" rel="stylesheet">
+    <link href="<?php echo BASE_URL; ?>themes/modern_red_theme.css?v=1.1" rel="stylesheet">
     <style>
         .loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(255,255,255,.7);z-index:9999;display:flex;align-items:center;justify-content:center}.loading-overlay .spinner-border{width:3rem;height:3rem}
         .badge-status{font-size: .85em; padding: .5em .8em; font-weight: 600;}
@@ -292,7 +292,6 @@ if ($is_ajax_request) {
                     <p class="text-center">กำลังโหลดข้อมูล...</p>
                 </div>
                 <div class="modal-footer">
-                    <!-- *** เพิ่ม: Placeholder สำหรับปุ่มลบ *** -->
                     <div id="modal-action-buttons" class="mr-auto"></div>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">ปิด</button>
                 </div>
@@ -440,7 +439,7 @@ if ($is_ajax_request) {
                 
                 modalContent.html('<p class="text-center">กำลังโหลดข้อมูล...</p>');
                 modalTitle.text('รายละเอียดรายการ');
-                modalActionPlaceholder.empty(); // เคลียร์ปุ่มเก่าทุกครั้งที่เปิด
+                modalActionPlaceholder.empty();
                 $('#orderDetailsModal').modal('show');
 
                 $.ajax({
@@ -485,8 +484,7 @@ if ($is_ajax_request) {
                             `;
                             modalContent.html(html);
 
-                            // *** เพิ่ม: แสดงปุ่มลบใน Modal ตามเงื่อนไข ***
-                            if (d.status === 'ยกเลิก' && [2, 4].includes(userRole)) {
+                            if (d.status === 'ยกเลิก' && (userRole === 2 || userRole === 4)) {
                                 const deleteBtnHtml = `<button class="btn btn-danger modal-delete-btn" data-orderid="${d.order_id}" data-docno="${d.cssale_docno}">
                                                           <i class="fas fa-trash-alt"></i> ลบรายการนี้ถาวร
                                                        </button>`;
@@ -503,12 +501,11 @@ if ($is_ajax_request) {
                 });
             });
 
-            // *** เพิ่ม: JavaScript Handler สำหรับปุ่มลบใน Modal ***
             $('#orderDetailsModal').on('click', '.modal-delete-btn', function() {
                 const orderId = $(this).data('orderid');
                 const docNo = $(this).data('docno');
                 
-                $('#orderDetailsModal').modal('hide'); // ซ่อน Modal เดิมก่อน
+                $('#orderDetailsModal').modal('hide'); 
 
                 Swal.fire({
                     title: 'ยืนยันการลบถาวร',
@@ -531,7 +528,7 @@ if ($is_ajax_request) {
                             success: function(response) {
                                 if (response.status === 'success') {
                                     Swal.fire({ icon: 'success', title: 'ลบสำเร็จ!', text: response.message, timer: 1500, showConfirmButton: false });
-                                    fetchData(currentPage); // โหลดข้อมูลในตารางใหม่
+                                    fetchData(currentPage); 
                                 } else {
                                     Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด!', text: response.message });
                                 }
