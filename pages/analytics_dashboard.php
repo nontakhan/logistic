@@ -134,14 +134,30 @@ $default_date_end = date('Y-m-d');
         .form-control {
             border-radius: 8px;
             border: 2px solid #e9ecef;
-            padding: 10px 15px;
+            padding: 8px 15px; /* Reduced vertical padding */
+            height: 45px; /* Fixed height for consistency */
+            line-height: 1.5;
             transition: all 0.3s;
+        }
+
+        select.form-control {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23333' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 10px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            padding-right: 30px; /* Space for arrow */
         }
         
         .form-control:focus {
             border-color: var(--primary-red);
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.1);
         }
+
+        /* ... existing styles ... */
+
         
         .btn-search {
             background: var(--gradient-red);
@@ -338,16 +354,18 @@ $default_date_end = date('Y-m-d');
         }
         
         /* Responsive */
-        @media (max-width: 992px) {
-            .content-container { padding: 0 30px; }
-            .stat-value { font-size: 1.8rem; }
-            .chart-container { height: 250px; }
-        }
-        
-        @media (max-width: 576px) {
-            .content-container { padding: 0 20px; }
-            .filter-card { padding: 20px; }
-            .chart-card, .table-card { padding: 20px; }
+        /* Print Styles */
+        @media print {
+            .dashboard-header, .filter-card, .loading-overlay { display: none !important; }
+            .content-container { padding: 0; max-width: 100%; }
+            .chart-card, .stat-card { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; }
+            body { background: white; margin: 0; padding: 0; }
+            .row { display: flex; flex-wrap: wrap; }
+            .col-lg-3, .col-lg-6, .col-12 { flex: 0 0 auto; width: 100%; }
+            .col-lg-3 { width: 25%; }
+            .col-lg-6 { width: 50%; }
+            /* Hide URL printing */
+            a[href]:after { content: none !important; }
         }
     </style>
 </head>
@@ -362,10 +380,17 @@ $default_date_end = date('Y-m-d');
     <div class="dashboard-header">
         <div class="content-container">
             <div class="d-flex justify-content-between align-items-center">
-                <h2><i class="fas fa-chart-line mr-2"></i>Analytics Dashboard</h2>
-                <a href="<?php echo BASE_URL; ?>index.php" class="btn btn-back">
-                    <i class="fas fa-arrow-left mr-2"></i>กลับหน้าหลัก
-                </a>
+                <h2 class="d-flex align-items-center">
+                    <i class="fas fa-chart-line mr-2"></i>Analytics Dashboard
+                </h2>
+                <div>
+                    <button type="button" onclick="window.print()" class="btn btn-back mr-2" style="background: white; color: var(--primary-red);">
+                        <i class="fas fa-print mr-1"></i>พิมพ์รายงาน
+                    </button>
+                    <a href="<?php echo BASE_URL; ?>index.php" class="btn btn-back">
+                        <i class="fas fa-arrow-left mr-2"></i>กลับหน้าหลัก
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -374,17 +399,17 @@ $default_date_end = date('Y-m-d');
         <!-- Filter -->
         <div class="filter-card">
             <form id="filterForm">
-                <div class="row align-items-end">
-                    <div class="col-lg-2 col-md-4 mb-3 mb-lg-0">
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 mb-3">
                         <label><i class="fas fa-calendar-alt mr-1"></i>วันที่เริ่มต้น</label>
                         <input type="date" class="form-control" id="date_start" value="<?php echo $default_date_start; ?>">
                     </div>
-                    <div class="col-lg-2 col-md-4 mb-3 mb-lg-0">
+                    <div class="col-lg-3 col-md-6 mb-3">
                         <label><i class="fas fa-calendar-alt mr-1"></i>วันที่สิ้นสุด</label>
                         <input type="date" class="form-control" id="date_end" value="<?php echo $default_date_end; ?>">
                     </div>
                     <?php if (in_array($_SESSION['role_level'], [1, 4])): ?>
-                    <div class="col-lg-3 col-md-4 mb-3 mb-lg-0">
+                    <div class="col-lg-3 col-md-6 mb-3">
                         <label><i class="fas fa-building mr-1"></i>สาขา</label>
                         <select class="form-control" id="transport_origin">
                             <option value="">ทุกสาขา</option>
@@ -396,8 +421,8 @@ $default_date_end = date('Y-m-d');
                         </select>
                     </div>
                     <?php endif; ?>
-                    <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
-                        <label><i class="fas fa-map-marker-alt mr-1"></i>จังหวัดที่ส่ง</label>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <label><i class="fas fa-map-marker-alt mr-1"></i>จังหวัด</label>
                         <select class="form-control" id="transport_province">
                             <option value="">ทุกจังหวัด</option>
                             <?php foreach ($provinces as $province): ?>
@@ -407,9 +432,29 @@ $default_date_end = date('Y-m-d');
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-lg-2 col-md-6">
+                    
+                    <!-- Row 2 Filters -->
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <label><i class="fas fa-map-pin mr-1"></i>อำเภอ</label>
+                        <select class="form-control" id="filter_amphoe" disabled>
+                            <option value="">ทุกอำเภอ</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <label><i class="fas fa-truck mr-1"></i>ประเภทรถ</label>
+                        <select class="form-control" id="filter_vehicle_type">
+                            <option value="">กำลังโหลด...</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <label><i class="fas fa-user-circle mr-1"></i>คนขับ</label>
+                        <select class="form-control" id="filter_driver">
+                            <option value="">กำลังโหลด...</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3 d-flex align-items-end">
                         <button type="submit" class="btn btn-search btn-block">
-                            <i class="fas fa-search mr-1"></i>ค้นหา
+                            <i class="fas fa-search mr-1"></i>ค้นหา / กรอง
                         </button>
                     </div>
                 </div>
@@ -543,8 +588,12 @@ $default_date_end = date('Y-m-d');
                 date_start: $('#date_start').val(),
                 date_end: $('#date_end').val(),
                 transport_origin: $('#transport_origin').val() || '',
-                province: $('#transport_province').val() || ''
+                province: $('#transport_province').val() || '',
+                amphoe: $('#filter_amphoe').val() || '',
+                vehicle_type: $('#filter_vehicle_type').val() || '',
+                driver_id: $('#filter_driver').val() || ''
             });
+
             showLoading();
 
             $.ajax({
@@ -564,6 +613,47 @@ $default_date_end = date('Y-m-d');
                 complete: hideLoading
             });
         }
+
+        function loadFilterOptions() {
+            $.getJSON('<?php echo BASE_URL; ?>php/get_analytics_data.php?action=get_filter_options', function(response) {
+                if(response.status === 'success') {
+                    // Vehicle Types
+                    let vHtml = '<option value="">ทุกประเภท</option>';
+                    if(response.data.vehicle_types) {
+                        response.data.vehicle_types.forEach(v => vHtml += `<option value="${v}">${v}</option>`);
+                    }
+                    $('#filter_vehicle_type').html(vHtml);
+
+                    // Drivers
+                    let dHtml = '<option value="">ทุกคน</option>';
+                    if(response.data.drivers) {
+                        response.data.drivers.forEach(d => dHtml += `<option value="${d.staff_id}">${d.staff_name}</option>`);
+                    }
+                    $('#filter_driver').html(dHtml);
+                }
+            });
+        }
+
+        // Load Amphoes on Province Change
+        $('#transport_province').change(function() {
+            const province = $(this).val();
+            const amphoeSelect = $('#filter_amphoe');
+            
+            if(!province) {
+                amphoeSelect.html('<option value="">ทุกอำเภอ</option>').prop('disabled', true);
+                return;
+            }
+
+            $.getJSON('<?php echo BASE_URL; ?>php/get_analytics_data.php?action=get_amphoes&province=' + encodeURIComponent(province), function(response) {
+                if(response.status === 'success') {
+                    let html = '<option value="">ทุกอำเภอ</option>';
+                    if(response.data) {
+                        response.data.forEach(a => html += `<option value="${a}">${a}</option>`);
+                    }
+                    amphoeSelect.html(html).prop('disabled', false);
+                }
+            });
+        });
 
         function updateDashboard(data) {
             // Stats
@@ -619,7 +709,10 @@ $default_date_end = date('Y-m-d');
                             grid: { color: '#f0f0f0' },
                             grace: '5%' // Add space at top
                         },
-                        x: { grid: { display: false } }
+                        x: { 
+                            grid: { display: false },
+                            ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 } // Force show all labels
+                        }
                     }
                 }
             });
@@ -729,6 +822,7 @@ $default_date_end = date('Y-m-d');
 
         $(document).ready(function() {
             fetchAnalytics();
+            loadFilterOptions();
             $('#filterForm').on('submit', function(e) { e.preventDefault(); fetchAnalytics(); });
         });
     </script>
