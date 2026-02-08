@@ -220,14 +220,17 @@ try {
     $vehicle_types = [];
     $sql_vehicle = "SELECT 
                         CASE 
-                            WHEN v.vehicle_name IS NULL OR v.vehicle_name = '' THEN 'ไม่ระบุ' 
+                            WHEN TRIM(v.vehicle_name) = '' OR v.vehicle_name IS NULL THEN 'ไม่ระบุ'
                             ELSE v.vehicle_name 
-                        END as vehicle_name, 
+                        END as clean_vehicle_name, 
                         COUNT(o.order_id) as count 
                     FROM orders o 
                     LEFT JOIN vehicles v ON o.assigned_vehicle_id = v.vehicle_id" 
                     . $sql_extra_joins 
-                    . $sql_where . " GROUP BY vehicle_name ORDER BY count DESC LIMIT 10";
+                    . $sql_where . " 
+                    GROUP BY clean_vehicle_name 
+                    ORDER BY count DESC LIMIT 10";
+                    
     $stmt = $conn->prepare($sql_vehicle);
     if (!empty($params)) {
         $stmt->bind_param($param_types, ...$params);
@@ -235,7 +238,7 @@ try {
     $stmt->execute();
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
-        $vehicle_types[] = ['label' => $row['vehicle_name'], 'value' => (int)$row['count']];
+        $vehicle_types[] = ['label' => $row['clean_vehicle_name'], 'value' => (int)$row['count']];
     }
     $stmt->close();
 

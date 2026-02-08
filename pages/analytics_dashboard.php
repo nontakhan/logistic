@@ -556,7 +556,7 @@ $default_date_end = date('Y-m-d');
         <div class="row">
             <div class="col-12">
                 <div class="chart-card">
-                    <h5><i class="fas fa-chart-area"></i>สรุปยอดจัดส่งรายเดือน (6 เดือนย้อนหลัง)</h5>
+                    <h5><i class="fas fa-chart-area"></i>สรุปยอดจัดส่งรายเดือน</h5>
                     <div class="chart-container" style="height: 280px;">
                         <canvas id="monthlyChart"></canvas>
                     </div>
