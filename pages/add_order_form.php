@@ -183,7 +183,7 @@ $conn->close();
                 <div class="form-group col-md-6">
                     <div class="d-flex justify-content-between align-items-center">
                         <label for="cssale_docno" class="mb-0">เลขที่บิล (จาก CS Sale):</label>
-                        <small class="text-info highlight">👆 คลิก dropdown เพื่อโหลดเพิ่ม 50 รายการ</small>
+                        <small class="text-info highlight">👆 คลิกครั้งเดียวโหลดเพิ่ม 50 รายการ!</small>
                     </div>
                     <select class="form-control select2-basic mt-2" id="cssale_docno" name="cssale_docno" required>
                         <option value="">-- เลือกเลขที่บิล --</option>
@@ -316,7 +316,7 @@ $conn->close();
             let cssaleLoaded = false;
             let cssaleOffset = 20; // เริ่มจาก 20 รายการแรก
 
-            $('#cssale_docno').on('select2:open', function() {
+            $('#cssale_docno').on('mousedown', function() {
                 if (!cssaleLoaded) {
                     loadMoreCSSaleOptions();
                     cssaleLoaded = true;
