@@ -361,6 +361,12 @@ $conn->close();
                             // แจ้งให้ Select2 ทราบว่ามีการเปลี่ยนแปลง - หลายวิธี
                             $select.trigger('change.select2');
                             $select.select2('destroy').select2(); // สร้างใหม่ทั้งหมด
+                            
+                            // เปิด dropdown อีกครั้งโดยอัตโนมัติหลังจาก refresh
+                            setTimeout(function() {
+                                $select.select2('open');
+                            }, 100);
+                            
                             cssaleOffset += response.options.length;
                             console.log('Added', response.options.length, 'options. New offset:', cssaleOffset);
                         }
