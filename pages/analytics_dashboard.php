@@ -311,6 +311,15 @@ $default_date_end = date('Y-m-d');
             }
         }
         
+        /* Special handling for tambon chart with very long labels */
+        #tambonChart {
+            max-width: 100%;
+        }
+        
+        .top-location-charts #tambonChart {
+            position: relative;
+        }
+        
         .chart-container {
             position: relative;
             height: 300px;
@@ -548,7 +557,7 @@ $default_date_end = date('Y-m-d');
 
         <!-- Top Locations Row: 3 Charts in One Row -->
         <div class="row mb-4 top-location-charts">
-            <div class="col-lg-4">
+            <div class="col-lg-3">
                 <div class="chart-card">
                     <h5><i class="fas fa-map-marker-alt"></i>Top 10 จังหวัด</h5>
                     <div class="chart-container"><canvas id="provinceChart"></canvas></div>
@@ -560,10 +569,10 @@ $default_date_end = date('Y-m-d');
                     <div class="chart-container"><canvas id="amphoeChart"></canvas></div>
                 </div>
             </div>
-            <div class="col-lg-4">
+            <div class="col-lg-5">
                 <div class="chart-card">
                     <h5><i class="fas fa-location-dot"></i>Top 10 ตำบล</h5>
-                    <div class="chart-container"><canvas id="tambonChart"></canvas></div>
+                    <div class="chart-container" style="height: 320px;"><canvas id="tambonChart"></canvas></div>
                 </div>
             </div>
         </div>
@@ -771,6 +780,10 @@ $default_date_end = date('Y-m-d');
             if (charts[key]) charts[key].destroy();
             if (!data || data.length === 0) return;
             
+            // Special handling for tambon chart with very long labels
+            const isTambonChart = canvasId === 'tambonChart';
+            const maxLabelLength = isTambonChart ? 80 : 50;
+            
             charts[key] = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -781,13 +794,24 @@ $default_date_end = date('Y-m-d');
                     responsive: true,
                     maintainAspectRatio: false,
                     indexAxis: 'y',
-                    layout: { padding: { right: 40, top: 10, bottom: 10 } }, // Prevent label clipping on right
+                    layout: { 
+                        padding: { 
+                            right: isTambonChart ? 60 : 40, 
+                            top: 10, 
+                            bottom: 10,
+                            left: isTambonChart ? 20 : 10
+                        } 
+                    },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
                                 title: function(tooltipItems) {
-                                    return tooltipItems[0].label.match(/.{1,60}(\s|$)/g) || [tooltipItems[0].label];
+                                    let label = tooltipItems[0].label;
+                                    if (isTambonChart && label.length > maxLabelLength) {
+                                        return label.match(/.{1,60}(\s|$)/g) || [label];
+                                    }
+                                    return label;
                                 }
                             }
                         },
@@ -795,7 +819,7 @@ $default_date_end = date('Y-m-d');
                             anchor: 'end',
                             align: 'right',
                             color: '#333',
-                            font: { weight: 'bold', size: 13 },
+                            font: { weight: 'bold', size: isTambonChart ? 11 : 13 },
                             formatter: value => value.toLocaleString()
                         }
                     },
@@ -808,11 +832,13 @@ $default_date_end = date('Y-m-d');
                         y: { 
                             grid: { display: false }, 
                             ticks: { 
-                                font: { size: 12 },
+                                font: { size: isTambonChart ? 10 : 12 },
                                 callback: function(value, index, values) {
                                     let label = this.getLabelForValue(value);
-                                    if (isLongLabel && label.length > 50) {
-                                        return label.substr(0, 50) + '...'; 
+                                    if (isLongLabel || isTambonChart) {
+                                        if (label.length > maxLabelLength) {
+                                            return label.substr(0, maxLabelLength) + '...'; 
+                                        }
                                     }
                                     return label;
                                 }
