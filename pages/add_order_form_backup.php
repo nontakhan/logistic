@@ -1,5 +1,5 @@
 <?php
-// pages/add_order_form_super_fast.php - Super Fast Version
+// pages/add_order_form.php
 require_once '../php/check_session.php';
 require_login([1, 2, 4]);
 
@@ -11,28 +11,26 @@ $project_folder = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 $base_project_folder = str_replace('/pages', '', $project_folder);
 define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . $base_project_folder . '/');
 
-// *** SUPER FAST: โหลดแค่ข้อมูลพื้นฐานก่อน ***
+// *** แก้ไข: ใช้ Query ที่เร็วขึ้นพร้อม Index ***
 $cssale_options = "";
-$origin_options = "";
-$transport_origin_options = "";
-$salesman_modal_options = "";
 
-// โหลดแค่ 20 รายการแรกเท่านั้น (สำหรับการแสดงผลทันที)
-$sql_cssale_initial = "SELECT cs.docno, cs.custname 
-                       FROM cssale cs
-                       WHERE cs.shipflag = 1 
-                       AND NOT EXISTS (
-                           SELECT 1 FROM orders o 
-                           WHERE o.cssale_docno = cs.docno 
-                           LIMIT 1
-                       )
-                       ORDER BY cs.docdate DESC, cs.docno DESC 
-                       LIMIT 20";
+// ใช้วิธีที่เร็วขึ้น: ไม่ใช้ LEFT JOIN แต่ใช้ NOT EXISTS แทน
+$sql_cssale = "SELECT cs.docno, cs.custname 
+               FROM cssale cs
+               WHERE cs.shipflag = 1 
+               AND NOT EXISTS (
+                   SELECT 1 FROM orders o 
+                   WHERE o.cssale_docno = cs.docno 
+                   LIMIT 1
+               )
+               ORDER BY cs.docdate DESC, cs.docno DESC 
+               LIMIT 100"; // ลดจาก 200 เป็น 100
 
-$conn->options(MYSQLI_OPT_CONNECT_TIMEOUT, 3); // ลดเหลือ 3 วินาที
+// เพิ่ม timeout และ cache control
+$conn->options(MYSQLI_OPT_CONNECT_TIMEOUT, 5);
 $start_time = microtime(true);
 
-$result_cssale = $conn->query($sql_cssale_initial);
+$result_cssale = $conn->query($sql_cssale);
 
 if ($result_cssale && $result_cssale->num_rows > 0) { 
     while($row = $result_cssale->fetch_assoc()) { 
@@ -40,11 +38,17 @@ if ($result_cssale && $result_cssale->num_rows > 0) {
     } 
 }
 
+// บันทึกเวลาที่ใช้ในการ query (สำหรับ debugging)
 $query_time = microtime(true) - $start_time;
-error_log("SUPER FAST CSSale query time: " . $query_time . " seconds");
+error_log("CSSale query time: " . $query_time . " seconds");
 
-// โหลดข้อมูลอื่นแบบจำกัดมากๆ
-$sql_origin = "SELECT id, CONCAT_WS(' ', mooban, moo, tambon, amphoe, province) AS full_address FROM origin ORDER BY id LIMIT 50";
+// *** แก้ไข: Cache query อื่นๆ ที่ใช้บ่อย ***
+$origin_options = "";
+$transport_origin_options = "";
+$salesman_modal_options = "";
+
+// ใช้ LIMIT เพื่อลดข้อมูลที่ไม่จำเป็น
+$sql_origin = "SELECT id, CONCAT_WS(' ', mooban, moo, tambon, amphoe, province) AS full_address FROM origin ORDER BY id LIMIT 500";
 $result_origin = $conn->query($sql_origin);
 if ($result_origin && $result_origin->num_rows > 0) { 
     while($row = $result_origin->fetch_assoc()) { 
@@ -52,7 +56,7 @@ if ($result_origin && $result_origin->num_rows > 0) {
     } 
 }
 
-$sql_transport = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY origin_name LIMIT 10";
+$sql_transport = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY origin_name LIMIT 50";
 $result_transport = $conn->query($sql_transport);
 if ($result_transport && $result_transport->num_rows > 0) { 
     while($row = $result_transport->fetch_assoc()) { 
@@ -60,7 +64,7 @@ if ($result_transport && $result_transport->num_rows > 0) {
     } 
 }
 
-$sql_salesman_modal = "SELECT DISTINCT code, lname FROM cssale WHERE code IS NOT NULL AND lname IS NOT NULL AND lname != '' ORDER BY lname ASC LIMIT 20";
+$sql_salesman_modal = "SELECT DISTINCT code, lname FROM cssale WHERE code IS NOT NULL AND lname IS NOT NULL AND lname != '' ORDER BY lname ASC LIMIT 100";
 $result_salesman_modal = $conn->query($sql_salesman_modal);
 if ($result_salesman_modal && $result_salesman_modal->num_rows > 0) { 
     while($row = $result_salesman_modal->fetch_assoc()) { 
@@ -69,6 +73,8 @@ if ($result_salesman_modal && $result_salesman_modal->num_rows > 0) {
 }
 
 $conn->close();
+
+
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -91,36 +97,31 @@ $conn->close();
     <link href="<?php echo BASE_URL; ?>themes/modern_red_theme.css" rel="stylesheet">
     <style>
         .bill-info-box {
-            background-color: #f1faff;
-            border-left: 4px solid #009ef7;
+            background-color: #f1faff; /* สีฟ้าอ่อน */
+            border-left: 4px solid #009ef7; /* เส้นเน้นสีน้ำเงิน */
         }
         
-        /* *** SUPER FAST: Improved Loading Indicator *** */
+        /* *** เพิ่ม: Loading indicator *** */
         .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.9);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 9999;
         }
         
-        .loading-content {
-            text-align: center;
-        }
-        
         .loading-spinner {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #dc2626;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto 10px;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
         }
         
         @keyframes spin {
@@ -131,26 +132,14 @@ $conn->close();
         .hide-loading {
             display: none;
         }
-        
-        /* *** SUPER FAST: Loading more indicator *** */
-        .loading-more {
-            text-align: center;
-            padding: 10px;
-            color: #666;
-            font-style: italic;
-        }
-        
-        .select2-container--default .select2-selection--single {
-            height: 38px;
-        }
     </style>
 </head>
 <body>
-    <!-- *** SUPER FAST: Loading Overlay *** -->
+    <!-- *** เพิ่ม: Loading Overlay *** -->
     <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <p>กำลังโหลดเร็วๆ...</p>
+        <div class="text-center">
+            <div class="loading-spinner mb-3"></div>
+            <p>กำลังโหลดข้อมูล...</p>
         </div>
     </div>
 
@@ -158,27 +147,23 @@ $conn->close();
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="mb-0">เพิ่มรายการจัดส่งใหม่</h2>
             <div>
+                <!-- *** แก้ไข: ย้ายปุ่มเพิ่มบิลใหม่มาที่นี่ *** -->
                 <button type="button" class="btn btn-outline-danger" data-toggle="modal" data-target="#addNewBillModal">
                     <i class="fas fa-plus"></i> เพิ่มบิลใหม่
                 </button>
                 <a href="<?php echo BASE_URL; ?>index.php" class="btn btn-secondary ml-2"><i class="fas fa-arrow-left mr-2"></i>กลับหน้าหลัก</a>
             </div>
         </div>
-        
         <form id="addOrderForm">
             <div class="form-row">
                 <div class="form-group col-md-6">
                     <div class="d-flex justify-content-between align-items-center">
                         <label for="cssale_docno" class="mb-0">เลขที่บิล (จาก CS Sale):</label>
-                        <small class="text-muted">โหลด 20 รายการแรก</small>
                     </div>
                     <select class="form-control select2-basic mt-2" id="cssale_docno" name="cssale_docno" required>
                         <option value="">-- เลือกเลขที่บิล --</option>
                         <?php echo $cssale_options; ?>
                     </select>
-                    <div id="cssaleLoadingMore" class="loading-more" style="display: none;">
-                        <i class="fas fa-spinner fa-spin"></i> กำลังโหลดเพิ่มเติม...
-                    </div>
                 </div>
                 <div class="form-group col-md-6">
                     <label for="customer_address_origin_id">ที่อยู่ลูกค้า (จาก Origin):</label>
@@ -230,7 +215,7 @@ $conn->close();
         </form>
     </div>
 
-    <!-- Modal สำหรับเพิ่มบิลใหม่ -->
+    <!-- *** เพิ่ม: Modal สำหรับเพิ่มบิลใหม่ *** -->
     <div class="modal fade" id="addNewBillModal" tabindex="-1" role="dialog" aria-labelledby="addNewBillModalLabel" aria-hidden="true">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -274,7 +259,6 @@ $conn->close();
         </div>
       </div>
     </div>
-
     <!-- JavaScript scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -283,11 +267,11 @@ $conn->close();
     <script src="<?php echo BASE_URL; ?>js/script.js?v=1.2"></script>
     <script>
         $(document).ready(function() {
-            // *** SUPER FAST: ซ่อน loading เร็วๆ ***
+            // *** เพิ่ม: ซ่อน loading เมื่อหน้าเว็บโหลดเสร็จ ***
             $(window).on('load', function() {
                 setTimeout(function() {
                     $('#loadingOverlay').addClass('hide-loading');
-                }, 200); // ลดจาก 500 เป็น 200ms
+                }, 500);
             });
 
             $('.select2-basic').select2({
@@ -297,42 +281,6 @@ $conn->close();
 
             function getBaseUrl() {
                 return "<?php echo BASE_URL; ?>";
-            }
-
-            // *** SUPER FAST: Lazy Load สำหรับ CSSale Dropdown ***
-            let cssaleLoaded = false;
-            let cssaleOffset = 20; // เริ่มจาก 20 รายการแรก
-
-            $('#cssale_docno').on('select2:opening', function() {
-                if (!cssaleLoaded) {
-                    loadMoreCSSaleOptions();
-                    cssaleLoaded = true;
-                }
-            });
-
-            function loadMoreCSSaleOptions() {
-                $('#cssaleLoadingMore').show();
-                
-                $.ajax({
-                    url: getBaseUrl() + 'php/load_more_cssale.php',
-                    type: 'GET',
-                    data: { offset: cssaleOffset },
-                    dataType: 'json',
-                    timeout: 8000, // 8 วินาที
-                    success: function(response) {
-                        if (response.status === 'success' && response.options) {
-                            const $select = $('#cssale_docno');
-                            response.options.forEach(function(option) {
-                                $select.append('<option value="' + option.value + '">' + option.text + '</option>');
-                            });
-                            cssaleOffset += response.options.length;
-                        }
-                        $('#cssaleLoadingMore').hide();
-                    },
-                    error: function() {
-                        $('#cssaleLoadingMore').html('<small class="text-danger">โหลดเพิ่มไม่สำเร็จ</small>').show();
-                    }
-                });
             }
 
             $('#cssale_docno').on('change', function() {
@@ -346,12 +294,13 @@ $conn->close();
                     $('#display-salesman').text('กำลังโหลด...');
                     detailsContainer.slideDown();
 
-                    $.ajax({
+                    // *** เพิ่ม: Timeout สำหรับ AJAX request ***
+                    const ajaxRequest = $.ajax({
                         url: getBaseUrl() + 'php/get_cs_sale_details.php',
                         type: 'GET',
                         data: { docno: selectedDocNo },
                         dataType: 'json',
-                        timeout: 8000, // ลดเหลือ 8 วินาที
+                        timeout: 10000, // 10 วินาที
                         success: function(response) {
                             if (response.status === 'success') {
                                 let salesmanDisplay = (response.salesman_code && response.salesman_name) ? `${response.salesman_code} - ${response.salesman_name}` : '-';
@@ -383,10 +332,9 @@ $conn->close();
                     detailsContainer.slideUp();
                 }
             });
-            
             $('#new_salesman_code').select2({
                 placeholder: "-- เลือกพนักงานขาย --",
-                dropdownParent: $('#addNewBillModal')
+                dropdownParent: $('#addNewBillModal') // สำคัญมากสำหรับ Select2 ใน Modal
             });
 
             $('#addNewBillForm').on('submit', function(e) {
@@ -404,7 +352,7 @@ $conn->close();
                     type: 'POST',
                     data: formData,
                     dataType: 'json',
-                    timeout: 12000, // 12 วินาที
+                    timeout: 15000, // 15 วินาที
                     success: function(response) {
                         Swal.close();
                         if (response.status === 'success') {
@@ -414,6 +362,7 @@ $conn->close();
                                 text: response.message
                             }).then(() => {
                                 $('#addNewBillModal').modal('hide');
+                                // โหลดหน้าใหม่เพื่อให้ dropdown อัปเดต
                                 location.reload();
                             });
                         } else {
@@ -439,6 +388,7 @@ $conn->close();
                 });
             });
 
+             // ล้างฟอร์มใน Modal เมื่อปิด
             $('#addNewBillModal').on('hidden.bs.modal', function () {
                 $('#addNewBillForm')[0].reset();
                 $('#new_salesman_code').val(null).trigger('change');
