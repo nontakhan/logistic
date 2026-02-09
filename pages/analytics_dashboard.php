@@ -293,6 +293,24 @@ $default_date_end = date('Y-m-d');
             margin-right: 8px;
         }
         
+        /* Adjust chart container height for location charts */
+        .top-location-charts .chart-container {
+            height: 280px;
+        }
+        
+        /* Responsive adjustments for location charts */
+        @media (max-width: 992px) {
+            .top-location-charts .chart-container {
+                height: 250px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .top-location-charts .chart-container {
+                height: 200px;
+            }
+        }
+        
         .chart-container {
             position: relative;
             height: 300px;
@@ -525,6 +543,31 @@ $default_date_end = date('Y-m-d');
             </div>
         </div>
 
+        <!-- Top Locations Section Title -->
+        <h4 class="section-title mt-4"><i class="fas fa-map-marked-alt"></i>Top 10 สถานที่จัดส่ง (แยกตามระดับ)</h4>
+
+        <!-- Top Locations Row: 3 Charts in One Row -->
+        <div class="row mb-4 top-location-charts">
+            <div class="col-lg-4">
+                <div class="chart-card">
+                    <h5><i class="fas fa-map-marker-alt"></i>Top 10 จังหวัด</h5>
+                    <div class="chart-container"><canvas id="provinceChart"></canvas></div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-card">
+                    <h5><i class="fas fa-map-pin"></i>Top 10 อำเภอ</h5>
+                    <div class="chart-container"><canvas id="amphoeChart"></canvas></div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-card">
+                    <h5><i class="fas fa-location-dot"></i>Top 10 ตำบล</h5>
+                    <div class="chart-container"><canvas id="tambonChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Location Section Title -->
         <h4 class="section-title mt-4"><i class="fas fa-map-marked-alt"></i>สถานที่จัดส่ง</h4>
 
@@ -668,6 +711,11 @@ $default_date_end = date('Y-m-d');
             updateBarChart('branch', 'branchChart', data.branch_rankings, colors.red);
             updateBarChart('vehicle', 'vehicleChart', data.vehicle_types, [colors.red, colors.green, colors.blue, colors.yellow, colors.purple, colors.orange]);
             updateHorizontalBarChart('driver', 'driverChart', data.driver_performance.map(d => ({label: d.name, value: d.count})), colors.orange);
+            
+            // New Top Location Charts
+            updateBarChart('province', 'provinceChart', data.top_provinces, colors.blue);
+            updateBarChart('amphoe', 'amphoeChart', data.top_amphoes, colors.green);
+            updateBarChart('tambon', 'tambonChart', data.top_tambons, colors.purple);
             
             // Combined Location Chart (using Horizontal Bar)
             updateHorizontalBarChart('location', 'locationChart', data.location_rankings, colors.teal, true);

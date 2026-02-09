@@ -261,7 +261,70 @@ try {
     }
     $stmt->close();
 
-    // --- 6. สถานที่จัดส่งยอดนิยม (Grouped Location) ---
+    // --- 6. Top 10 Provinces ---
+    $top_provinces = [];
+    $sql_province = "SELECT COALESCE(og.province, 'ไม่ระบุ') as province, COUNT(o.order_id) as count 
+                     FROM orders o 
+                     LEFT JOIN origin og ON o.customer_address_origin_id = og.id" 
+                     . $sql_extra_joins 
+                     . $sql_where . " 
+                     GROUP BY og.province 
+                     HAVING province != 'ไม่ระบุ' AND province != ''
+                     ORDER BY count DESC LIMIT 10";
+    $stmt = $conn->prepare($sql_province);
+    if (!empty($params)) {
+        $stmt->bind_param($param_types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $top_provinces[] = ['label' => $row['province'], 'value' => (int)$row['count']];
+    }
+    $stmt->close();
+
+    // --- 7. Top 10 Amphoes ---
+    $top_amphoes = [];
+    $sql_amphoe = "SELECT CONCAT(COALESCE(og.province, ''), ' > ', COALESCE(og.amphoe, '')) as amphoe_full, COUNT(o.order_id) as count 
+                  FROM orders o 
+                  LEFT JOIN origin og ON o.customer_address_origin_id = og.id" 
+                  . $sql_extra_joins 
+                  . $sql_where . " 
+                  GROUP BY og.province, og.amphoe 
+                  HAVING amphoe_full != ' > ' AND amphoe_full != '' AND amphoe_full != 'ไม่ระบุ > '
+                  ORDER BY count DESC LIMIT 10";
+    $stmt = $conn->prepare($sql_amphoe);
+    if (!empty($params)) {
+        $stmt->bind_param($param_types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $top_amphoes[] = ['label' => $row['amphoe_full'], 'value' => (int)$row['count']];
+    }
+    $stmt->close();
+
+    // --- 8. Top 10 Tambons ---
+    $top_tambons = [];
+    $sql_tambon = "SELECT CONCAT(COALESCE(og.province, ''), ' > ', COALESCE(og.amphoe, ''), ' > ', COALESCE(og.tambon, '')) as tambon_full, COUNT(o.order_id) as count 
+                   FROM orders o 
+                   LEFT JOIN origin og ON o.customer_address_origin_id = og.id" 
+                   . $sql_extra_joins 
+                   . $sql_where . " 
+                   GROUP BY og.province, og.amphoe, og.tambon 
+                   HAVING tambon_full != ' >  > ' AND tambon_full != '' AND tambon_full != 'ไม่ระบุ >  > '
+                   ORDER BY count DESC LIMIT 10";
+    $stmt = $conn->prepare($sql_tambon);
+    if (!empty($params)) {
+        $stmt->bind_param($param_types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $top_tambons[] = ['label' => $row['tambon_full'], 'value' => (int)$row['count']];
+    }
+    $stmt->close();
+
+    // --- 9. สถานที่จัดส่งยอดนิยม (Grouped Location) ---
     $location_rankings = [];
     if ($join_origin) {
         // ถ้ามีการ join origin แล้ว (จาก filter) ต้องระวังเรื่อง alias
@@ -395,6 +458,9 @@ try {
             'branch_rankings' => $branch_rankings,
             'vehicle_types' => $vehicle_types,
             'driver_performance' => $driver_performance,
+            'top_provinces' => $top_provinces,
+            'top_amphoes' => $top_amphoes,
+            'top_tambons' => $top_tambons,
             'location_rankings' => $location_rankings,
             'customer_rankings' => $customer_rankings,
             'monthly_summary' => $monthly_summary
