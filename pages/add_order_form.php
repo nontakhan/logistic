@@ -156,6 +156,17 @@ $conn->close();
             50% { opacity: 0.7; }
             100% { opacity: 1; }
         }
+        
+        /* *** SUPER FAST: Ensure scroll bar for dropdown *** */
+        .select2-container--default .select2-results > .select2-results__options {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .select2-dropdown {
+            border: 1px solid #aaa;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -360,7 +371,16 @@ $conn->close();
                             });
                             // แจ้งให้ Select2 ทราบว่ามีการเปลี่ยนแปลง - หลายวิธี
                             $select.trigger('change.select2');
-                            $select.select2('destroy').select2(); // สร้างใหม่ทั้งหมด
+                            $select.select2('destroy');
+                            
+                            // สร้าง Select2 ใหม่พร้อมการตั้งค่าครบถ้วน
+                            $select.select2({
+                                placeholder: "-- กรุณาเลือก --",
+                                allowClear: true,
+                                dropdownAutoWidth: true,
+                                width: '100%',
+                                maximumSelectionLength: 1
+                            });
                             
                             // เปิด dropdown อีกครั้งโดยอัตโนมัติหลังจาก refresh
                             setTimeout(function() {
