@@ -143,6 +143,19 @@ $conn->close();
         .select2-container--default .select2-selection--single {
             height: 38px;
         }
+        
+        /* *** SUPER FAST: Highlight info text *** */
+        .text-info.highlight {
+            color: #17a2b8;
+            font-weight: 500;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -170,14 +183,14 @@ $conn->close();
                 <div class="form-group col-md-6">
                     <div class="d-flex justify-content-between align-items-center">
                         <label for="cssale_docno" class="mb-0">เลขที่บิล (จาก CS Sale):</label>
-                        <small class="text-muted">โหลด 20 รายการแรก</small>
+                        <small class="text-info highlight">👆 คลิก dropdown เพื่อโหลดเพิ่ม 50 รายการ</small>
                     </div>
                     <select class="form-control select2-basic mt-2" id="cssale_docno" name="cssale_docno" required>
                         <option value="">-- เลือกเลขที่บิล --</option>
                         <?php echo $cssale_options; ?>
                     </select>
                     <div id="cssaleLoadingMore" class="loading-more" style="display: none;">
-                        <i class="fas fa-spinner fa-spin"></i> กำลังโหลดเพิ่มเติม...
+                        <i class="fas fa-spinner fa-spin"></i> กำลังโหลดเพิ่ม 50 รายการ...
                     </div>
                 </div>
                 <div class="form-group col-md-6">
@@ -303,7 +316,7 @@ $conn->close();
             let cssaleLoaded = false;
             let cssaleOffset = 20; // เริ่มจาก 20 รายการแรก
 
-            $('#cssale_docno').on('select2:opening', function() {
+            $('#cssale_docno').on('select2:open', function() {
                 if (!cssaleLoaded) {
                     loadMoreCSSaleOptions();
                     cssaleLoaded = true;
