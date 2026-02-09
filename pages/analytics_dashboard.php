@@ -714,8 +714,8 @@ $default_date_end = date('Y-m-d');
             
             // New Top Location Charts
             updateBarChart('province', 'provinceChart', data.top_provinces, colors.blue);
-            updateBarChart('amphoe', 'amphoeChart', data.top_amphoes, colors.green);
-            updateBarChart('tambon', 'tambonChart', data.top_tambons, colors.purple);
+            updateHorizontalBarChart('amphoe', 'amphoeChart', data.top_amphoes, colors.green);
+            updateHorizontalBarChart('tambon', 'tambonChart', data.top_tambons, colors.purple);
             
             // Combined Location Chart (using Horizontal Bar)
             updateHorizontalBarChart('location', 'locationChart', data.location_rankings, colors.teal, true);
