@@ -316,14 +316,33 @@ $conn->close();
             let cssaleLoaded = false;
             let cssaleOffset = 20; // เริ่มจาก 20 รายการแรก
 
-            $('#cssale_docno').on('mousedown', function() {
+            // ลองหลายวิธีเพื่อให้มั่นใจว่าจะโหลด
+            function triggerLoadMoreCSSale() {
                 if (!cssaleLoaded) {
+                    console.log('Loading more CSSale options...');
                     loadMoreCSSaleOptions();
                     cssaleLoaded = true;
                 }
+            }
+
+            $('#cssale_docno').on('click', function() {
+                console.log('CSSale clicked');
+                setTimeout(triggerLoadMoreCSSale, 100);
+            });
+
+            $('#cssale_docno').on('focus', function() {
+                console.log('CSSale focused');
+                setTimeout(triggerLoadMoreCSSale, 200);
+            });
+
+            // Backup: ใช้ select2:opening ด้วย
+            $('#cssale_docno').on('select2:opening', function() {
+                console.log('Select2 opening');
+                setTimeout(triggerLoadMoreCSSale, 50);
             });
 
             function loadMoreCSSaleOptions() {
+                console.log('loadMoreCSSaleOptions called, cssaleLoaded:', cssaleLoaded);
                 $('#cssaleLoadingMore').show();
                 
                 $.ajax({
@@ -333,16 +352,19 @@ $conn->close();
                     dataType: 'json',
                     timeout: 8000, // 8 วินาที
                     success: function(response) {
+                        console.log('AJAX success:', response);
                         if (response.status === 'success' && response.options) {
                             const $select = $('#cssale_docno');
                             response.options.forEach(function(option) {
                                 $select.append('<option value="' + option.value + '">' + option.text + '</option>');
                             });
                             cssaleOffset += response.options.length;
+                            console.log('Added', response.options.length, 'options. New offset:', cssaleOffset);
                         }
                         $('#cssaleLoadingMore').hide();
                     },
-                    error: function() {
+                    error: function(xhr, status, error) {
+                        console.log('AJAX error:', status, error);
                         $('#cssaleLoadingMore').html('<small class="text-danger">โหลดเพิ่มไม่สำเร็จ</small>').show();
                     }
                 });
