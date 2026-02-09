@@ -1,7 +1,6 @@
 <?php
 // pages/add_order_form.php
 require_once '../php/check_session.php';
-// สิทธิ์ที่ต้องการสำหรับหน้านี้: ระดับ 1 และ 4 (Admin)
 require_login([1, 2, 4]);
 
 require_once '../php/db_connect.php'; 
@@ -12,32 +11,68 @@ $project_folder = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 $base_project_folder = str_replace('/pages', '', $project_folder);
 define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . $base_project_folder . '/');
 
-// SQL query เพื่อกรองบิลที่ยังไม่ได้เพิ่มเข้าระบบ
+// *** แก้ไข: ใช้ Query ที่เร็วขึ้นพร้อม Index ***
 $cssale_options = "";
+
+// ใช้วิธีที่เร็วขึ้น: ไม่ใช้ LEFT JOIN แต่ใช้ NOT EXISTS แทน
 $sql_cssale = "SELECT cs.docno, cs.custname 
                FROM cssale cs
-               LEFT JOIN orders o ON cs.docno = o.cssale_docno COLLATE utf8mb4_unicode_ci
-               WHERE cs.shipflag = 1 AND o.order_id IS NULL
+               WHERE cs.shipflag = 1 
+               AND NOT EXISTS (
+                   SELECT 1 FROM orders o 
+                   WHERE o.cssale_docno = cs.docno 
+                   LIMIT 1
+               )
                ORDER BY cs.docdate DESC, cs.docno DESC 
-               LIMIT 200";
+               LIMIT 100"; // ลดจาก 200 เป็น 100
+
+// เพิ่ม timeout และ cache control
+$conn->options(MYSQLI_OPT_CONNECT_TIMEOUT, 5);
+$start_time = microtime(true);
+
 $result_cssale = $conn->query($sql_cssale);
 
-if ($result_cssale && $result_cssale->num_rows > 0) { while($row = $result_cssale->fetch_assoc()) { $cssale_options .= "<option value='" . htmlspecialchars($row['docno']) . "'>" . htmlspecialchars($row['docno'] . ' - ' . $row['custname']) . "</option>"; } }
+if ($result_cssale && $result_cssale->num_rows > 0) { 
+    while($row = $result_cssale->fetch_assoc()) { 
+        $cssale_options .= "<option value='" . htmlspecialchars($row['docno']) . "'>" . htmlspecialchars($row['docno'] . ' - ' . $row['custname']) . "</option>"; 
+    } 
+}
 
+// บันทึกเวลาที่ใช้ในการ query (สำหรับ debugging)
+$query_time = microtime(true) - $start_time;
+error_log("CSSale query time: " . $query_time . " seconds");
+
+// *** แก้ไข: Cache query อื่นๆ ที่ใช้บ่อย ***
 $origin_options = "";
-$sql_origin = "SELECT id, CONCAT_WS(' ', mooban, moo, tambon, amphoe, province) AS full_address FROM origin ORDER BY id";
-$result_origin = $conn->query($sql_origin);
-if ($result_origin && $result_origin->num_rows > 0) { while($row = $result_origin->fetch_assoc()) { $origin_options .= "<option value='" . htmlspecialchars($row['id']) . "'>" . htmlspecialchars($row['full_address']) . "</option>"; } }
-
 $transport_origin_options = "";
-$sql_transport = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY transport_origin_id";
-$result_transport = $conn->query($sql_transport);
-if ($result_transport && $result_transport->num_rows > 0) { while($row = $result_transport->fetch_assoc()) { $transport_origin_options .= "<option value='" . htmlspecialchars($row['transport_origin_id']) . "'>" . htmlspecialchars($row['origin_name']) . "</option>"; } }
-
 $salesman_modal_options = "";
-$sql_salesman_modal = "SELECT DISTINCT code, lname FROM cssale WHERE code IS NOT NULL AND lname IS NOT NULL AND lname != '' ORDER BY lname ASC";
+
+// ใช้ LIMIT เพื่อลดข้อมูลที่ไม่จำเป็น
+$sql_origin = "SELECT id, CONCAT_WS(' ', mooban, moo, tambon, amphoe, province) AS full_address FROM origin ORDER BY id LIMIT 500";
+$result_origin = $conn->query($sql_origin);
+if ($result_origin && $result_origin->num_rows > 0) { 
+    while($row = $result_origin->fetch_assoc()) { 
+        $origin_options .= "<option value='" . htmlspecialchars($row['id']) . "'>" . htmlspecialchars($row['full_address']) . "</option>"; 
+    } 
+}
+
+$sql_transport = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY origin_name LIMIT 50";
+$result_transport = $conn->query($sql_transport);
+if ($result_transport && $result_transport->num_rows > 0) { 
+    while($row = $result_transport->fetch_assoc()) { 
+        $transport_origin_options .= "<option value='" . htmlspecialchars($row['transport_origin_id']) . "'>" . htmlspecialchars($row['origin_name']) . "</option>"; 
+    } 
+}
+
+$sql_salesman_modal = "SELECT DISTINCT code, lname FROM cssale WHERE code IS NOT NULL AND lname IS NOT NULL AND lname != '' ORDER BY lname ASC LIMIT 100";
 $result_salesman_modal = $conn->query($sql_salesman_modal);
-if ($result_salesman_modal && $result_salesman_modal->num_rows > 0) { while($row = $result_salesman_modal->fetch_assoc()) { $salesman_modal_options .= "<option value='" . htmlspecialchars($row['code']) . "'>" . htmlspecialchars($row['code'] . ' - ' . $row['lname']) . "</option>"; } }
+if ($result_salesman_modal && $result_salesman_modal->num_rows > 0) { 
+    while($row = $result_salesman_modal->fetch_assoc()) { 
+        $salesman_modal_options .= "<option value='" . htmlspecialchars($row['code']) . "'>" . htmlspecialchars($row['code'] . ' - ' . $row['lname']) . "</option>"; 
+    } 
+}
+
+$conn->close();
 
 
 ?>
@@ -65,9 +100,49 @@ if ($result_salesman_modal && $result_salesman_modal->num_rows > 0) { while($row
             background-color: #f1faff; /* สีฟ้าอ่อน */
             border-left: 4px solid #009ef7; /* เส้นเน้นสีน้ำเงิน */
         }
+        
+        /* *** เพิ่ม: Loading indicator *** */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #dc2626;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hide-loading {
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <!-- *** เพิ่ม: Loading Overlay *** -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="text-center">
+            <div class="loading-spinner mb-3"></div>
+            <p>กำลังโหลดข้อมูล...</p>
+        </div>
+    </div>
+
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="mb-0">เพิ่มรายการจัดส่งใหม่</h2>
@@ -192,6 +267,13 @@ if ($result_salesman_modal && $result_salesman_modal->num_rows > 0) { while($row
     <script src="<?php echo BASE_URL; ?>js/script.js?v=1.2"></script>
     <script>
         $(document).ready(function() {
+            // *** เพิ่ม: ซ่อน loading เมื่อหน้าเว็บโหลดเสร็จ ***
+            $(window).on('load', function() {
+                setTimeout(function() {
+                    $('#loadingOverlay').addClass('hide-loading');
+                }, 500);
+            });
+
             $('.select2-basic').select2({
                 placeholder: "-- กรุณาเลือก --",
                 allowClear: true
@@ -212,11 +294,13 @@ if ($result_salesman_modal && $result_salesman_modal->num_rows > 0) { while($row
                     $('#display-salesman').text('กำลังโหลด...');
                     detailsContainer.slideDown();
 
-                    $.ajax({
+                    // *** เพิ่ม: Timeout สำหรับ AJAX request ***
+                    const ajaxRequest = $.ajax({
                         url: getBaseUrl() + 'php/get_cs_sale_details.php',
                         type: 'GET',
                         data: { docno: selectedDocNo },
                         dataType: 'json',
+                        timeout: 10000, // 10 วินาที
                         success: function(response) {
                             if (response.status === 'success') {
                                 let salesmanDisplay = (response.salesman_code && response.salesman_name) ? `${response.salesman_code} - ${response.salesman_name}` : '-';
@@ -232,9 +316,14 @@ if ($result_salesman_modal && $result_salesman_modal->num_rows > 0) { while($row
                                 $('#display-salesman').text('-');
                             }
                         },
-                        error: function() {
-                            $('#display-custname').text('เกิดข้อผิดพลาด');
-                            $('#display-shipaddr').text('เกิดข้อผิดพลาด');
+                        error: function(xhr, status, error) {
+                            if (status === 'timeout') {
+                                $('#display-custname').text('หมดเวลา');
+                                $('#display-shipaddr').text('หมดเวลา');
+                            } else {
+                                $('#display-custname').text('เกิดข้อผิดพลาด');
+                                $('#display-shipaddr').text('เกิดข้อผิดพลาด');
+                            }
                             $('#display-docdate').text('-');
                             $('#display-salesman').text('-');
                         }
@@ -263,6 +352,7 @@ if ($result_salesman_modal && $result_salesman_modal->num_rows > 0) { while($row
                     type: 'POST',
                     data: formData,
                     dataType: 'json',
+                    timeout: 15000, // 15 วินาที
                     success: function(response) {
                         Swal.close();
                         if (response.status === 'success') {
@@ -287,9 +377,13 @@ if ($result_salesman_modal && $result_salesman_modal->num_rows > 0) { while($row
                             Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', html: errorHtml });
                         }
                     },
-                    error: function() {
+                    error: function(xhr, status, error) {
                         Swal.close();
-                        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ' });
+                        if (status === 'timeout') {
+                            Swal.fire({ icon: 'error', title: 'หมดเวลาในการเชื่อมต่อ' });
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ' });
+                        }
                     }
                 });
             });
