@@ -17,7 +17,7 @@ $origin_options = "";
 $transport_origin_options = "";
 $salesman_modal_options = "";
 
-// โหลดแค่ 20 รายการแรกเท่านั้น (สำหรับการแสดงผลทันที)
+// โหลดแค่ 50 รายการแรกเท่านั้น (สำหรับการแสดงผลทันที)
 $sql_cssale_initial = "SELECT cs.docno, cs.custname 
                        FROM cssale cs
                        WHERE cs.shipflag = 1 
@@ -27,7 +27,7 @@ $sql_cssale_initial = "SELECT cs.docno, cs.custname
                            LIMIT 1
                        )
                        ORDER BY cs.docdate DESC, cs.docno DESC 
-                       LIMIT 20";
+                       LIMIT 50";
 
 $conn->options(MYSQLI_OPT_CONNECT_TIMEOUT, 3); // ลดเหลือ 3 วินาที
 $start_time = microtime(true);
@@ -194,7 +194,7 @@ $conn->close();
                 <div class="form-group col-md-6">
                     <div class="d-flex justify-content-between align-items-center">
                         <label for="cssale_docno" class="mb-0">เลขที่บิล (จาก CS Sale):</label>
-                        <small class="text-info highlight">👆 คลิกครั้งเดียวโหลดเพิ่ม 50 รายการ!</small>
+                        <small class="text-info highlight">👆 คลิกโหลดเพิ่ม 50 รายการ (มี 50 รายการแรกอยู่แล้ว)</small>
                     </div>
                     <select class="form-control select2-basic mt-2" id="cssale_docno" name="cssale_docno" required>
                         <option value="">-- เลือกเลขที่บิล --</option>
@@ -325,7 +325,7 @@ $conn->close();
 
             // *** SUPER FAST: Lazy Load สำหรับ CSSale Dropdown ***
             let cssaleLoaded = false;
-            let cssaleOffset = 20; // เริ่มจาก 20 รายการแรก
+            let cssaleOffset = 50; // เริ่มจาก 50 รายการแรก
 
             // ลองหลายวิธีเพื่อให้มั่นใจว่าจะโหลด
             function triggerLoadMoreCSSale() {
