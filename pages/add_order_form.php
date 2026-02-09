@@ -366,23 +366,18 @@ $conn->close();
                         console.log('AJAX success:', response);
                         if (response.status === 'success' && response.options) {
                             const $select = $('#cssale_docno');
+                            
+                            // เพิ่ม options ใหม่เข้าไปใน Select2 โดยตรง
                             response.options.forEach(function(option) {
-                                $select.append('<option value="' + option.value + '">' + option.text + '</option>');
-                            });
-                            // แจ้งให้ Select2 ทราบว่ามีการเปลี่ยนแปลง - หลายวิธี
-                            $select.trigger('change.select2');
-                            $select.select2('destroy');
-                            
-                            // สร้าง Select2 ใหม่พร้อมการตั้งค่าครบถ้วน
-                            $select.select2({
-                                placeholder: "-- กรุณาเลือก --",
-                                allowClear: true,
-                                dropdownAutoWidth: true,
-                                width: '100%',
-                                maximumSelectionLength: 1
+                                // สร้าง option element ใหม่
+                                var newOption = new Option(option.text, option.value, false, false);
+                                $select.append(newOption);
                             });
                             
-                            // เปิด dropdown อีกครั้งโดยอัตโนมัติหลังจาก refresh
+                            // อัปเดต Select2 ให้รู้จัก options ใหม่
+                            $select.trigger('change');
+                            
+                            // เปิด dropdown อีกครั้งโดยอัตโนมัติ
                             setTimeout(function() {
                                 $select.select2('open');
                             }, 100);
