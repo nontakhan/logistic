@@ -167,6 +167,14 @@ $conn->close();
             border: 1px solid #aaa;
             border-radius: 4px;
         }
+        
+        /* *** SUPER FAST: Loading overlay fix *** */
+        .loading-overlay.hide-loading,
+        .loading-overlay[style*="display: none"] {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+        }
     </style>
 </head>
 <body>
@@ -307,11 +315,30 @@ $conn->close();
     <script src="<?php echo BASE_URL; ?>js/script.js?v=1.2"></script>
     <script>
         $(document).ready(function() {
-            // *** SUPER FAST: ซ่อน loading เร็วๆ ***
+            // *** SUPER FAST: ซ่อน loading overlay อย่างแน่นอน ***
+            // วิธีที่ 1: ซ่อนทันทีเมื่อ DOM ready
+            $('#loadingOverlay').hide();
+            
+            // วิธีที่ 2: ซ่อนเมื่อ window load (backup)
             $(window).on('load', function() {
                 setTimeout(function() {
-                    $('#loadingOverlay').addClass('hide-loading');
-                }, 200); // ลดจาก 500 เป็น 200ms
+                    $('#loadingOverlay').hide();
+                }, 100);
+            });
+            
+            // วิธีที่ 3: ซ่อนเมื่อ page fully loaded (backup 2)
+            $(document).on('pageshow', function() {
+                $('#loadingOverlay').hide();
+            });
+            
+            // วิธีที่ 4: ซ่อนเมื่อมีการ focus บนฟอร์ม (backup 3)
+            $('#addOrderForm input, #addOrderForm select, #addOrderForm button').on('focus', function() {
+                $('#loadingOverlay').hide();
+            });
+            
+            // วิธีที่ 5: ซ่อนเมื่อมีการคลิกใดๆ (backup 4)
+            $('body').on('click', function() {
+                $('#loadingOverlay').hide();
             });
 
             $('.select2-basic').select2({
