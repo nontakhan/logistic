@@ -52,7 +52,8 @@ if ($result_origin && $result_origin->num_rows > 0) {
     } 
 }
 
-$sql_transport = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY origin_name LIMIT 10";
+// โหลดข้อมูลทั้งหมด
+$sql_transport = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY origin_name";
 $result_transport = $conn->query($sql_transport);
 if ($result_transport && $result_transport->num_rows > 0) { 
     while($row = $result_transport->fetch_assoc()) { 
@@ -60,7 +61,7 @@ if ($result_transport && $result_transport->num_rows > 0) {
     } 
 }
 
-$sql_salesman_modal = "SELECT DISTINCT code, lname FROM cssale WHERE code IS NOT NULL AND lname IS NOT NULL AND lname != '' ORDER BY lname ASC LIMIT 20";
+$sql_salesman_modal = "SELECT DISTINCT code, lname FROM cssale WHERE code IS NOT NULL AND lname IS NOT NULL AND lname != '' ORDER BY lname ASC";
 $result_salesman_modal = $conn->query($sql_salesman_modal);
 if ($result_salesman_modal && $result_salesman_modal->num_rows > 0) { 
     while($row = $result_salesman_modal->fetch_assoc()) { 
