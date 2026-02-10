@@ -43,8 +43,8 @@ if ($result_cssale && $result_cssale->num_rows > 0) {
 $query_time = microtime(true) - $start_time;
 error_log("SUPER FAST CSSale query time: " . $query_time . " seconds");
 
-// โหลดข้อมูลอื่นแบบจำกัดมากๆ
-$sql_origin = "SELECT id, CONCAT_WS(' ', mooban, moo, tambon, amphoe, province) AS full_address FROM origin ORDER BY id LIMIT 50";
+// โหลดข้อมูลที่อยู่ทั้งหมด
+$sql_origin = "SELECT id, CONCAT_WS(' ', mooban, moo, tambon, amphoe, province) AS full_address FROM origin ORDER BY id";
 $result_origin = $conn->query($sql_origin);
 if ($result_origin && $result_origin->num_rows > 0) { 
     while($row = $result_origin->fetch_assoc()) { 
