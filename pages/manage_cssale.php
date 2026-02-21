@@ -26,7 +26,7 @@ $param_types .= "ss";
 // Only show cssale records that don't exist in orders
 $sql_where = " WHERE " . implode(" AND ", $where_clauses);
 
-$sql = "SELECT cs.docno, cs.docdate, cs.custname, cs.shipaddr, cs.shipflag, cs.empname, cs.salename 
+$sql = "SELECT cs.docno, cs.docdate, cs.custname, cs.shipaddr, cs.shipflag, cs.lname, cs.salesman 
         FROM cssale cs 
         LEFT JOIN orders o ON cs.docno = o.cssale_docno 
         " . $sql_where . " 
@@ -112,8 +112,8 @@ $result = $stmt->get_result();
                         <th>ชื่อลูกค้า</th>
                         <th>ที่อยู่จัดส่ง</th>
                         <th>สถานะจัดส่ง</th>
-                        <th>พนักงานขาย</th>
-                        <th>ผู้แนะนำ</th>
+                        <th>รหัสพนักงาน</th>
+                        <th>รหัสผู้แนะนำ</th>
                         <th>ดำเนินการ</th>
                     </tr>
                 </thead>
@@ -132,8 +132,8 @@ $result = $stmt->get_result();
                                         <span class="badge badge-warning">ยังไม่จัดส่ง</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo htmlspecialchars($row['empname'] ?: '-'); ?></td>
-                                <td><?php echo htmlspecialchars($row['salename'] ?: '-'); ?></td>
+                                <td><?php echo htmlspecialchars($row['salesman'] ?: '-'); ?></td>
+                                <td><?php echo htmlspecialchars($row['lname'] ?: '-'); ?></td>
                                 <td class="action-buttons">
                                     <button class="btn btn-danger btn-sm delete-cssale-btn" 
                                             data-docno="<?php echo htmlspecialchars($row['docno']); ?>" 
