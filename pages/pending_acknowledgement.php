@@ -30,7 +30,7 @@ if (!empty($search_docno)) {
 
 $sql_where = " WHERE " . implode(" AND ", $where_clauses);
 
-$sql = "SELECT o.order_id, o.cssale_docno, cs.custname, CONCAT_WS(', ', ori.moo, ori.mooban, ori.tambon, ori.amphoe, ori.province) AS customer_full_address, cs.shipaddr AS cssale_shipaddr, o.product_details, o.priority, o.order_date, t_org.origin_name AS transport_origin_name FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci LEFT JOIN origin ori ON o.customer_address_origin_id = ori.id LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id" . $sql_where . " ORDER BY o.order_date DESC, o.created_at DESC";
+$sql = "SELECT o.order_id, o.cssale_docno, cs.custname, o.customer_address, CONCAT_WS(', ', ori.moo, ori.mooban, ori.tambon, ori.amphoe, ori.province) AS customer_full_address, cs.shipaddr AS cssale_shipaddr, o.product_details, o.priority, o.order_date, t_org.origin_name AS transport_origin_name FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci LEFT JOIN origin ori ON o.customer_address_origin_id = ori.id LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id" . $sql_where . " ORDER BY o.order_date DESC, o.created_at DESC";
 
 $stmt = $conn->prepare($sql);
 if (!empty($params)) {
@@ -100,6 +100,7 @@ $result = $stmt->get_result();
                 <thead class="thead-light">
                     <tr>
                         <th>ID ติดตาม</th><th>เลขที่บิล</th><th>ชื่อลูกค้า</th>
+                        <th>ที่อยู่ลูกค้า</th>
                         <th>หมายเหตุ</th>
                         <th>ต้นทางขนส่ง</th><th>วันที่สั่ง</th><th>ความเร่งด่วน</th><th>ดำเนินการ</th>
                     </tr>
@@ -111,6 +112,7 @@ $result = $stmt->get_result();
                                 <td><?php echo htmlspecialchars($row['order_id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['cssale_docno']); ?></td>
                                 <td><?php echo htmlspecialchars($row['custname']); ?></td>
+                                <td><?php echo htmlspecialchars($row['customer_address'] ?: '-'); ?></td>
                                 <td><?php echo nl2br(htmlspecialchars($row['cssale_shipaddr'])); ?></td>
                                 <td><?php echo htmlspecialchars($row['transport_origin_name']); ?></td>
                                 <td><?php echo date("d/m/Y", strtotime($row['order_date'])); ?></td>

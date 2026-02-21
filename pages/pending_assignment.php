@@ -27,7 +27,7 @@ if (!empty($search_docno)) {
 }
 $sql_where = " WHERE " . implode(" AND ", $where_clauses);
 
-$sql_orders = "SELECT o.order_id, o.cssale_docno, cs.custname, CONCAT_WS(', ', ori.moo, ori.mooban, ori.tambon, ori.amphoe, ori.province) AS customer_full_address, cs.shipaddr AS cssale_shipaddr, o.product_details, o.priority, o.order_date, t_org.origin_name AS transport_origin_name FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci LEFT JOIN origin ori ON o.customer_address_origin_id = ori.id LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id" . $sql_where . " ORDER BY o.order_date DESC, o.created_at DESC";
+$sql_orders = "SELECT o.order_id, o.cssale_docno, cs.custname, o.customer_address, CONCAT_WS(', ', ori.moo, ori.mooban, ori.tambon, ori.amphoe, ori.province) AS customer_full_address, cs.shipaddr AS cssale_shipaddr, o.product_details, o.priority, o.order_date, t_org.origin_name AS transport_origin_name FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci LEFT JOIN origin ori ON o.customer_address_origin_id = ori.id LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id" . $sql_where . " ORDER BY o.order_date DESC, o.created_at DESC";
 $stmt = $conn->prepare($sql_orders);
 if (!empty($params)) { $stmt->bind_param($param_types, ...$params); }
 $stmt->execute();
@@ -110,6 +110,7 @@ if ($result_vehicles && $result_vehicles->num_rows > 0) { while($row = $result_v
                 <thead class="thead-light">
                     <tr>
                         <th>ID ติดตาม</th><th>เลขที่บิล</th><th>ชื่อลูกค้า</th>
+                        <th>ที่อยู่ลูกค้า</th>
                         <th>หมายเหตุ</th>
                         <th>ต้นทางขนส่ง</th><th>วันที่สั่ง</th><th>ความเร่งด่วน</th><th>ดำเนินการ</th>
                     </tr>
@@ -121,6 +122,7 @@ if ($result_vehicles && $result_vehicles->num_rows > 0) { while($row = $result_v
                                 <td><?php echo htmlspecialchars($row['order_id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['cssale_docno']); ?></td>
                                 <td><?php echo htmlspecialchars($row['custname']); ?></td>
+                                <td><?php echo htmlspecialchars($row['customer_address'] ?: '-'); ?></td>
                                 <td><?php echo nl2br(htmlspecialchars($row['cssale_shipaddr'])); ?></td>
                                 <td><?php echo htmlspecialchars($row['transport_origin_name']); ?></td>
                                 <td><?php echo date("d/m/Y", strtotime($row['order_date'])); ?></td>
@@ -134,7 +136,7 @@ if ($result_vehicles && $result_vehicles->num_rows > 0) { while($row = $result_v
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="9" class="text-center">ไม่มีรายการที่รอจัดคน/รถ</td></tr>
+                        <tr><td colspan="10" class="text-center">ไม่มีรายการที่รอจัดคน/รถ</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
