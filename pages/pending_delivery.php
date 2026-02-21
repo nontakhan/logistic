@@ -28,7 +28,7 @@ if (!empty($search_docno)) {
 }
 $sql_where = " WHERE " . implode(" AND ", $where_clauses);
 
-$sql = "SELECT o.order_id, o.cssale_docno, cs.custname, o.customer_address, CONCAT_WS(', ', ori.moo, ori.mooban, ori.tambon, ori.amphoe, ori.province) AS customer_full_address, cs.shipaddr AS cssale_shipaddr, o.product_details, o.priority, o.order_date, t_org.origin_name AS transport_origin_name, s.staff_name AS assigned_staff_name, CONCAT(v.vehicle_name, ' (', v.vehicle_plate, ')') AS assigned_vehicle_info FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci LEFT JOIN origin ori ON o.customer_address_origin_id = ori.id LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id LEFT JOIN staff s ON o.assigned_staff_id = s.staff_id LEFT JOIN vehicles v ON o.assigned_vehicle_id = v.vehicle_id" . $sql_where . " ORDER BY o.order_date DESC, o.created_at DESC";
+$sql = "SELECT o.order_id, o.cssale_docno, cs.custname, CONCAT_WS(', ', ori.moo, ori.mooban, ori.tambon, ori.amphoe, ori.province) AS customer_full_address, cs.shipaddr AS cssale_shipaddr, o.product_details, o.priority, o.order_date, t_org.origin_name AS transport_origin_name, s.staff_name AS assigned_staff_name, CONCAT(v.vehicle_name, ' (', v.vehicle_plate, ')') AS assigned_vehicle_info FROM orders o LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci LEFT JOIN origin ori ON o.customer_address_origin_id = ori.id LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id LEFT JOIN staff s ON o.assigned_staff_id = s.staff_id LEFT JOIN vehicles v ON o.assigned_vehicle_id = v.vehicle_id" . $sql_where . " ORDER BY o.order_date DESC, o.created_at DESC";
 $stmt = $conn->prepare($sql);
 if (!empty($params)) { $stmt->bind_param($param_types, ...$params); }
 $stmt->execute();
@@ -109,7 +109,7 @@ $result = $stmt->get_result();
                                 <td><?php echo htmlspecialchars($row['order_id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['cssale_docno']); ?></td>
                                 <td><?php echo htmlspecialchars($row['custname']); ?></td>
-                                <td><?php echo htmlspecialchars(!empty($row['customer_address']) ? $row['customer_address'] : '-'); ?></td>
+                                <td><?php echo htmlspecialchars(!empty($row['customer_full_address']) ? $row['customer_full_address'] : '-'); ?></td>
                                 <td><?php echo htmlspecialchars($row['cssale_shipaddr']); ?></td>
                                 <td><?php echo htmlspecialchars($row['transport_origin_name']); ?></td>
                                 <td><?php echo htmlspecialchars(!empty($row['assigned_staff_name']) ? $row['assigned_staff_name'] : '-'); ?></td>
