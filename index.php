@@ -571,6 +571,11 @@ $conn->close();
                         <i class="fas fa-chart-line"></i>Analytics
                     </a>
                 </div>
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                    <a href="<?php echo BASE_URL; ?>pages/manage_cssale.php" class="btn btn-outline-warning btn-block">
+                        <i class="fas fa-trash-alt"></i>จัดการ CSSale
+                    </a>
+                </div>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
