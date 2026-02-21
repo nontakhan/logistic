@@ -277,6 +277,30 @@ $conn->close();
             margin-bottom: 0;
         }
 
+        /* Clickable Stat Cards */
+        .stat-card-link {
+            text-decoration: none;
+            display: block;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card-link:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card-link:hover .stat-card {
+            box-shadow: var(--shadow-xl);
+            transform: scale(1.02);
+        }
+
+        .stat-card-link:hover .stat-icon {
+            transform: scale(1.1);
+        }
+
+        .stat-card-link:hover .stat-number {
+            transform: scale(1.05);
+        }
+
         /* Section Titles */
         .section-title {
             font-size: 1.75rem;
@@ -484,40 +508,48 @@ $conn->close();
             </h3>
             <div class="row">
                 <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="stat-card pending-ack">
-                        <div class="stat-icon">
-                            <i class="fas fa-inbox"></i>
+                    <a href="<?php echo BASE_URL; ?>pages/pending_acknowledgement.php" class="stat-card-link">
+                        <div class="stat-card pending-ack">
+                            <div class="stat-icon">
+                                <i class="fas fa-inbox"></i>
+                            </div>
+                            <div class="stat-number" id="count-pending-ack"><?php echo $counts['pending_ack']; ?></div>
+                            <div class="stat-label">รอรับเรื่อง</div>
                         </div>
-                        <div class="stat-number" id="count-pending-ack"><?php echo $counts['pending_ack']; ?></div>
-                        <div class="stat-label">รอรับเรื่อง</div>
-                    </div>
+                    </a>
                 </div>
                 <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="stat-card pending-assign">
-                        <div class="stat-icon">
-                            <i class="fas fa-user-cog"></i>
+                    <a href="<?php echo BASE_URL; ?>pages/pending_assignment.php" class="stat-card-link">
+                        <div class="stat-card pending-assign">
+                            <div class="stat-icon">
+                                <i class="fas fa-user-cog"></i>
+                            </div>
+                            <div class="stat-number" id="count-pending-assign"><?php echo $counts['pending_assign']; ?></div>
+                            <div class="stat-label">รอจัดคน/รถ</div>
                         </div>
-                        <div class="stat-number" id="count-pending-assign"><?php echo $counts['pending_assign']; ?></div>
-                        <div class="stat-label">รอจัดคน/รถ</div>
-                    </div>
+                    </a>
                 </div>
                 <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="stat-card pending-delivery">
-                        <div class="stat-icon">
-                            <i class="fas fa-truck-loading"></i>
+                    <a href="<?php echo BASE_URL; ?>pages/pending_delivery.php" class="stat-card-link">
+                        <div class="stat-card pending-delivery">
+                            <div class="stat-icon">
+                                <i class="fas fa-truck-loading"></i>
+                            </div>
+                            <div class="stat-number" id="count-pending-delivery"><?php echo $counts['pending_delivery']; ?></div>
+                            <div class="stat-label">รอส่งของ</div>
                         </div>
-                        <div class="stat-number" id="count-pending-delivery"><?php echo $counts['pending_delivery']; ?></div>
-                        <div class="stat-label">รอส่งของ</div>
-                    </div>
+                    </a>
                 </div>
                 <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="stat-card delivered-today">
-                        <div class="stat-icon">
-                            <i class="fas fa-check-circle"></i>
+                    <a href="<?php echo BASE_URL; ?>pages/delivered_today.php" class="stat-card-link">
+                        <div class="stat-card delivered-today">
+                            <div class="stat-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-number" id="count-delivered-today"><?php echo $counts['delivered_today']; ?></div>
+                            <div class="stat-label">ส่งของแล้ว (วันนี้)</div>
                         </div>
-                        <div class="stat-number" id="count-delivered-today"><?php echo $counts['delivered_today']; ?></div>
-                        <div class="stat-label">ส่งของแล้ว (วันนี้)</div>
-                    </div>
+                    </a>
                 </div>
             </div>
         </div>
