@@ -122,7 +122,7 @@ if ($result_vehicles && $result_vehicles->num_rows > 0) { while($row = $result_v
                                 <td><?php echo htmlspecialchars($row['order_id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['cssale_docno']); ?></td>
                                 <td><?php echo htmlspecialchars($row['custname']); ?></td>
-                                <td><?php echo htmlspecialchars($row['customer_address'] ?: '-'); ?></td>
+                                <td><?php echo htmlspecialchars(!empty($row['customer_address']) ? $row['customer_address'] : '-'); ?></td>
                                 <td><?php echo nl2br(htmlspecialchars($row['cssale_shipaddr'])); ?></td>
                                 <td><?php echo htmlspecialchars($row['transport_origin_name']); ?></td>
                                 <td><?php echo date("d/m/Y", strtotime($row['order_date'])); ?></td>

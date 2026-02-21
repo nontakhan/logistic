@@ -109,11 +109,11 @@ $result = $stmt->get_result();
                                 <td><?php echo htmlspecialchars($row['order_id']); ?></td>
                                 <td><?php echo htmlspecialchars($row['cssale_docno']); ?></td>
                                 <td><?php echo htmlspecialchars($row['custname']); ?></td>
-                                <td><?php echo htmlspecialchars($row['customer_address'] ?: '-'); ?></td>
+                                <td><?php echo htmlspecialchars(!empty($row['customer_address']) ? $row['customer_address'] : '-'); ?></td>
                                 <td><?php echo htmlspecialchars($row['cssale_shipaddr']); ?></td>
                                 <td><?php echo htmlspecialchars($row['transport_origin_name']); ?></td>
-                                <td><?php echo htmlspecialchars($row['assigned_staff_name'] ?: '-'); ?></td>
-                                <td><?php echo htmlspecialchars($row['assigned_vehicle_info'] ?: '-'); ?></td>
+                                <td><?php echo htmlspecialchars(!empty($row['assigned_staff_name']) ? $row['assigned_staff_name'] : '-'); ?></td>
+                                <td><?php echo htmlspecialchars(!empty($row['assigned_vehicle_info']) ? $row['assigned_vehicle_info'] : '-'); ?></td>
                                 <td><?php echo date("d/m/Y", strtotime($row['order_date'])); ?></td>
                                 <td><?php echo htmlspecialchars($row['priority']); ?></td>
                                 <td class="action-buttons">
