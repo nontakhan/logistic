@@ -97,10 +97,17 @@ $result = $stmt->get_result();
             </form>
         </div>
 
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i> 
-            <strong>ข้อมูลนี้แสดงเฉพาะรายการจากตาราง CSSale ที่ยังไม่มีในตาราง Orders</strong> 
-            (<?php echo $result->num_rows; ?> รายการ)
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-info-circle"></i> 
+                <strong>ข้อมูลนี้แสดงเฉพาะรายการจากตาราง CSSale ที่ยังไม่มีในตาราง Orders</strong> 
+                (<?php echo $result->num_rows; ?> รายการ)
+            </div>
+            <?php if ($result && $result->num_rows > 0): ?>
+            <button class="btn btn-danger btn-sm delete-all-btn" id="deleteAllBtn">
+                <i class="fas fa-trash-alt"></i> ลบทั้งหมด (<?php echo $result->num_rows; ?> รายการ)
+            </button>
+            <?php endif; ?>
         </div>
 
         <div class="table-responsive">
@@ -156,7 +163,7 @@ $result = $stmt->get_result();
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function() {
-            // Delete CSSale record
+            // Delete single CSSale record
             $('#cssale-table-body').on('click', '.delete-cssale-btn', function() {
                 const docno = $(this).data('docno');
                 const custname = $(this).data('custname');
@@ -175,69 +182,152 @@ $result = $stmt->get_result();
                     cancelButtonText: 'ไม่'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'กำลังลบข้อมูล...',
-                            allowOutsideClick: false,
-                            didOpen: () => Swal.showLoading()
-                        });
-                        
-                        $.ajax({
-                            url: '<?php echo BASE_URL; ?>php/delete_cssale.php',
-                            type: 'POST',
-                            data: {
-                                docno: docno
-                            },
-                            dataType: 'json',
-                            success: function(response) {
-                                Swal.close();
-                                if (response.status === 'success') {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'ลบข้อมูลสำเร็จ!',
-                                        text: response.message,
-                                        timer: 2000,
-                                        showConfirmButton: false
-                                    }).then(() => {
-                                        // Remove row from table
-                                        $('#cssale-row-' + docno).fadeOut(500, function() {
-                                            $(this).remove();
-                                            
-                                            // Update count in alert
-                                            const currentCount = $('#cssale-table-body tr').length;
-                                            $('.alert-info').html(
-                                                '<i class="fas fa-info-circle"></i> ' +
-                                                '<strong>ข้อมูลนี้แสดงเฉพาะรายการจากตาราง CSSale ที่ยังไม่มีในตาราง Orders</strong> ' +
-                                                `(${currentCount} รายการ)`
-                                            );
-                                            
-                                            // Show no data message if empty
-                                            if (currentCount === 0) {
-                                                $('#cssale-table-body').html(
-                                                    '<tr><td colspan="8" class="text-center">ไม่พบข้อมูล CSSale ที่ไม่ได้ใช้ในช่วงวันที่ที่เลือก</td></tr>'
-                                                );
-                                            }
-                                        });
-                                    });
-                                } else {
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'เกิดข้อผิดพลาด!',
-                                        text: response.message
-                                    });
-                                }
-                            },
-                            error: function() {
-                                Swal.close();
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
-                                    text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
-                                });
-                            }
-                        });
+                        deleteSingleCSSale(docno);
                     }
                 });
             });
+            
+            // Delete all CSSale records
+            $('#deleteAllBtn').click(function() {
+                const totalCount = $(this).data('count') || $('#cssale-table-body tr').length;
+                
+                Swal.fire({
+                    title: 'ยืนยันการลบข้อมูลทั้งหมด',
+                    html: `คุณต้องการลบข้อมูล CSSale ทั้งหมด <strong>${totalCount} รายการ</strong> ใช่หรือไม่?<br><br>
+                           <span class="text-danger">⚠️ การกระทำนี้จะลบข้อมูลทั้งหมดในช่วงวันที่ที่เลือกและไม่สามารถย้อนกลับได้!</span><br>
+                           <span class="text-warning">📋 ข้อมูลที่มีออเดอร์ที่เกี่ยวข้องจะไม่ถูกลบ</span>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'ใช่, ลบทั้งหมด!',
+                    cancelButtonText: 'ไม่',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        deleteAllCSSale();
+                    }
+                });
+            });
+            
+            // Function to delete single CSSale
+            function deleteSingleCSSale(docno) {
+                Swal.fire({
+                    title: 'กำลังลบข้อมูล...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+                
+                $.ajax({
+                    url: '<?php echo BASE_URL; ?>php/delete_cssale.php',
+                    type: 'POST',
+                    data: {
+                        docno: docno
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        Swal.close();
+                        if (response.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'ลบข้อมูลสำเร็จ!',
+                                text: response.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                // Remove row from table
+                                $('#cssale-row-' + docno).fadeOut(500, function() {
+                                    $(this).remove();
+                                    updateCountDisplay();
+                                });
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'เกิดข้อผิดพลาด!',
+                                text: response.message
+                            });
+                        }
+                    },
+                    error: function() {
+                        Swal.close();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
+                            text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+                        });
+                    }
+                });
+            }
+            
+            // Function to delete all CSSale
+            function deleteAllCSSale() {
+                Swal.fire({
+                    title: 'กำลังลบข้อมูลทั้งหมด...',
+                    html: 'กรุณารอสักครู่ กำลังลบข้อมูล CSSale ทั้งหมด...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+                
+                $.ajax({
+                    url: '<?php echo BASE_URL; ?>php/delete_all_cssale.php',
+                    type: 'POST',
+                    data: {
+                        filter_start: '<?php echo $filter_start; ?>',
+                        filter_end: '<?php echo $filter_end; ?>'
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        Swal.close();
+                        if (response.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'ลบข้อมูลทั้งหมดสำเร็จ!',
+                                html: `ลบข้อมูล CSSale ทั้งหมด <strong>${response.deleted_count}</strong> รายการเรียบร้อยแล้ว`,
+                                timer: 3000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                // Reload page to show updated data
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'เกิดข้อผิดพลาด!',
+                                text: response.message
+                            });
+                        }
+                    },
+                    error: function() {
+                        Swal.close();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
+                            text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+                        });
+                    }
+                });
+            }
+            
+            // Function to update count display
+            function updateCountDisplay() {
+                const currentCount = $('#cssale-table-body tr').length;
+                $('.alert-info div').html(
+                    '<i class="fas fa-info-circle"></i> ' +
+                    '<strong>ข้อมูลนี้แสดงเฉพาะรายการจากตาราง CSSale ที่ยังไม่มีในตาราง Orders</strong> ' +
+                    `(${currentCount} รายการ)`
+                );
+                
+                // Update or hide delete all button
+                if (currentCount === 0) {
+                    $('#deleteAllBtn').hide();
+                    $('#cssale-table-body').html(
+                        '<tr><td colspan="8" class="text-center">ไม่พบข้อมูล CSSale ที่ไม่ได้ใช้ในช่วงวันที่ที่เลือก</td></tr>'
+                    );
+                } else {
+                    $('#deleteAllBtn').show().text(`ลบทั้งหมด (${currentCount} รายการ)`);
+                }
+            }
         });
     </script>
 </body>
