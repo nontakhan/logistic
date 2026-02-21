@@ -119,6 +119,7 @@ $result = $stmt->get_result();
                                 <td><?php echo htmlspecialchars($row['priority']); ?></td>
                                 <td class="action-buttons">
                                     <button class="btn btn-success btn-sm acknowledge-btn" data-orderid="<?php echo htmlspecialchars($row['order_id']); ?>" data-docno="<?php echo htmlspecialchars($row['cssale_docno']); ?>"><i class="fas fa-check-circle"></i> รับเรื่อง</button>
+                                    <button class="btn btn-info btn-sm change-origin-btn" data-orderid="<?php echo htmlspecialchars($row['order_id']); ?>" data-docno="<?php echo htmlspecialchars($row['cssale_docno']); ?>" data-current-origin="<?php echo htmlspecialchars($row['transport_origin_name']); ?>"><i class="fas fa-exchange-alt"></i> เปลี่ยนต้นทาง</button>
                                     <?php if(has_role([2, 4])): ?>
                                     <button class="btn btn-danger btn-sm cancel-btn" data-orderid="<?php echo htmlspecialchars($row['order_id']); ?>" data-docno="<?php echo htmlspecialchars($row['cssale_docno']); ?>"><i class="fas fa-times-circle"></i> ยกเลิก</button>
                                     <?php endif; ?>
@@ -132,11 +133,159 @@ $result = $stmt->get_result();
             </table>
         </div>
     </div>
+
+    <!-- Modal สำหรับเปลี่ยนต้นทางขนส่ง -->
+    <div class="modal fade" id="changeOriginModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">เปลี่ยนต้นทางขนส่ง</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="changeOriginForm">
+                        <div class="form-group">
+                            <label for="currentOrigin">ต้นทางปัจจุบัน:</label>
+                            <input type="text" class="form-control" id="currentOrigin" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="newOrigin">ต้นทางใหม่:</label>
+                            <select class="form-control" id="newOrigin" required>
+                                <option value="">-- เลือกต้นทางขนส่ง --</option>
+                                <?php
+                                $sql_transport_origins = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY origin_name";
+                                $result_transport_origins = $conn->query($sql_transport_origins);
+                                if ($result_transport_origins && $result_transport_origins->num_rows > 0) {
+                                    while($origin_row = $result_transport_origins->fetch_assoc()) {
+                                        echo "<option value='" . htmlspecialchars($origin_row['transport_origin_id']) . "'>" . htmlspecialchars($origin_row['origin_name']) . "</option>";
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <input type="hidden" id="changeOrderId">
+                        <input type="hidden" id="changeDocNo">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" id="saveOriginBtn">บันทึกการเปลี่ยน</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function(){function t(){return"<?php echo BASE_URL;?>"}$("#orders-table-body").on("click",".acknowledge-btn",function(){const e=$(this).data("orderid"),o=$(this).data("docno");Swal.fire({title:"ยืนยันการรับเรื่อง",text:`คุณต้องการรับเรื่องสำหรับบิลเลขที่: ${o} ใช่หรือไม่?`,icon:"question",showCancelButton:!0,confirmButtonColor:"#28a745",cancelButtonColor:"#d33",confirmButtonText:"ใช่, รับเรื่องเลย!",cancelButtonText:"ยกเลิก"}).then(o=>{o.isConfirmed&&(Swal.fire({title:"กำลังดำเนินการ...",allowOutsideClick:!1,didOpen:()=>Swal.showLoading()}),$.ajax({url:t()+"php/acknowledge_order.php",type:"POST",data:{order_id:e},dataType:"json",success:function(t){Swal.close(),"success"===t.status?(Swal.fire({icon:"success",title:"รับเรื่องสำเร็จ!",text:t.message,timer:1500,showConfirmButton:!1}),$("#order-row-"+e).fadeOut(500,function(){$(this).remove()})):Swal.fire({icon:"error",title:"เกิดข้อผิดพลาด!",text:t.message})},error:function(){Swal.close(),Swal.fire({icon:"error",title:"เกิดข้อผิดพลาดในการเชื่อมต่อ"})}}))})}),$("#orders-table-body").on("click",".cancel-btn",function(){const e=$(this).data("orderid"),o=$(this).data("docno");Swal.fire({title:"ยืนยันการยกเลิก",text:`คุณต้องการยกเลิกบิลเลขที่: ${o} ใช่หรือไม่?`,icon:"warning",showCancelButton:!0,confirmButtonColor:"#d33",cancelButtonColor:"#3085d6",confirmButtonText:"ใช่, ยกเลิกเลย!",cancelButtonText:"ไม่"}).then(o=>{o.isConfirmed&&(Swal.fire({title:"กำลังดำเนินการ...",allowOutsideClick:!1,didOpen:()=>Swal.showLoading()}),$.ajax({url:t()+"php/cancel_order.php",type:"POST",data:{order_id:e},dataType:"json",success:function(t){Swal.close(),"success"===t.status?(Swal.fire({icon:"success",title:"ยกเลิกสำเร็จ!",text:t.message,timer:1500,showConfirmButton:!1}),$("#order-row-"+e).fadeOut(500,function(){$(this).remove()})):Swal.fire({icon:"error",title:"เกิดข้อผิดพลาด!",text:t.message})},error:function(){Swal.close(),Swal.fire({icon:"error",title:"เกิดข้อผิดพลาดในการเชื่อมต่อ"})}}))})})});
+    </script>
+    
+    <script>
+        // Change Transport Origin Functionality
+        $(document).ready(function() {
+            // Open change origin modal
+            $('#orders-table-body').on('click', '.change-origin-btn', function() {
+                const orderId = $(this).data('orderid');
+                const docNo = $(this).data('docno');
+                const currentOrigin = $(this).data('current-origin');
+                
+                $('#changeOrderId').val(orderId);
+                $('#changeDocNo').val(docNo);
+                $('#currentOrigin').val(currentOrigin);
+                $('#newOrigin').val('');
+                
+                $('#changeOriginModal').modal('show');
+            });
+            
+            // Save origin change
+            $('#saveOriginBtn').click(function() {
+                const orderId = $('#changeOrderId').val();
+                const docNo = $('#changeDocNo').val();
+                const newOriginId = $('#newOrigin').val();
+                const newOriginName = $('#newOrigin option:selected').text();
+                
+                if (!newOriginId) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'กรุณาเลือกต้นทางขนส่ง',
+                        text: 'โปรดเลือกต้นทางขนส่งที่ต้องการเปลี่ยน'
+                    });
+                    return;
+                }
+                
+                Swal.fire({
+                    title: 'ยืนยันการเปลี่ยนต้นทาง',
+                    html: `คุณต้องการเปลี่ยนต้นทางขนส่งสำหรับบิลเลขที่: <strong>${docNo}</strong><br>
+                           จาก: <strong>${$('#currentOrigin').val()}</strong><br>
+                           ไปเป็น: <strong>${newOriginName}</strong><br>
+                           ใช่หรือไม่?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#007bff',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'ใช่, เปลี่ยนเลย!',
+                    cancelButtonText: 'ยกเลิก'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'กำลังดำเนินการ...',
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+                        
+                        $.ajax({
+                            url: '<?php echo BASE_URL; ?>php/change_transport_origin.php',
+                            type: 'POST',
+                            data: {
+                                order_id: orderId,
+                                transport_origin_id: newOriginId
+                            },
+                            dataType: 'json',
+                            success: function(response) {
+                                Swal.close();
+                                if (response.status === 'success') {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'เปลี่ยนต้นทางสำเร็จ!',
+                                        text: response.message,
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    }).then(() => {
+                                        // Update the transport origin in the table
+                                        const row = $('#order-row-' + orderId);
+                                        row.find('td:eq(5)').text(newOriginName);
+                                        
+                                        // Update button data attribute
+                                        row.find('.change-origin-btn').data('current-origin', newOriginName);
+                                        
+                                        // Close modal
+                                        $('#changeOriginModal').modal('hide');
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'เกิดข้อผิดพลาด!',
+                                        text: response.message
+                                    });
+                                }
+                            },
+                            error: function() {
+                                Swal.close();
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
+                                    text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
