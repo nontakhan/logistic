@@ -8,8 +8,10 @@ require_once __DIR__ . '/db_connect.php';
 
 // 2. Get filter parameters from GET request
 $search_term = isset($_GET['search_term']) ? trim($conn->real_escape_string($_GET['search_term'])) : '';
-$filter_status = isset($_GET['filter_status']) ? $conn->real_escape_string($_GET['filter_status']) : '';
+$filter_status = isset($_GET['filter_status']) && is_array($_GET['filter_status']) ? $_GET['filter_status'] : [];
 $filter_salesman = isset($_GET['filter_salesman']) ? $conn->real_escape_string($_GET['filter_salesman']) : '';
+$filter_transport_origin = isset($_GET['filter_transport_origin']) ? $conn->real_escape_string($_GET['filter_transport_origin']) : '';
+$filter_destination_text = isset($_GET['filter_destination_text']) ? trim($conn->real_escape_string($_GET['filter_destination_text'])) : '';
 $filter_date_start = isset($_GET['filter_date_start']) && !empty($_GET['filter_date_start']) ? $conn->real_escape_string($_GET['filter_date_start']) : '';
 $filter_date_end = isset($_GET['filter_date_end']) && !empty($_GET['filter_date_end']) ? $conn->real_escape_string($_GET['filter_date_end']) : '';
 
@@ -25,15 +27,34 @@ if (is_logged_in() && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned
 }
 
 if (!empty($search_term)) {
-    $where_clauses[] = "(o.cssale_docno LIKE ? OR cs.custname LIKE ? OR cs.lname LIKE ?)";
+    $where_clauses[] = "(o.cssale_docno LIKE ? OR cs.custname LIKE ?)";
     $search_like = "%" . $search_term . "%";
-    array_push($params, $search_like, $search_like, $search_like);
-    $param_types .= "sss";
+    array_push($params, $search_like, $search_like);
+    $param_types .= "ss";
 }
+
+// กรองตามปลายทาง
+if (!empty($filter_destination_text)) {
+    $where_clauses[] = "CONCAT_WS(' ', org.moo, org.mooban, org.tambon, org.amphoe, org.province) LIKE ?";
+    $dest_like = "%" . $filter_destination_text . "%";
+    $params[] = $dest_like;
+    $param_types .= "s";
+}
+
 if (!empty($filter_status)) {
-    $where_clauses[] = "o.status = ?"; 
-    $params[] = $filter_status; 
-    $param_types .= "s"; 
+    $placeholders = implode(',', array_fill(0, count($filter_status), '?'));
+    $where_clauses[] = "o.status IN (" . $placeholders . ")";
+    foreach ($filter_status as $status_value) {
+        $params[] = $status_value;
+    }
+    $param_types .= str_repeat('s', count($filter_status));
+}
+
+// กรองตามต้นทางขนส่ง
+if (!empty($filter_transport_origin)) {
+    $where_clauses[] = "o.transport_origin_id = ?";
+    $params[] = $filter_transport_origin;
+    $param_types .= "i";
 }
 if (!empty($filter_salesman)) {
     $where_clauses[] = "cs.code = ?"; 
@@ -68,7 +89,8 @@ $sql_data = "SELECT
                 o.updated_at
             FROM orders o
             LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci
-            LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id"
+            LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id
+            LEFT JOIN origin org ON o.customer_address_origin_id = org.id"
             . $sql_where . " ORDER BY o.updated_at DESC";
 
 $stmt = $conn->prepare($sql_data);
