@@ -84,13 +84,16 @@ $sql_data = "SELECT
                 cs.custname,
                 CONCAT(cs.code, ' - ', cs.lname) AS salesman_info,
                 t_org.origin_name AS transport_origin_name,
+                CONCAT_WS(', ', org.moo, org.mooban, org.tambon, org.amphoe, org.province) AS destination_address,
+                v.vehicle_name AS vehicle_type,
                 cs.shipaddr, 
                 o.status, 
                 o.updated_at
             FROM orders o
             LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci
             LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id
-            LEFT JOIN origin org ON o.customer_address_origin_id = org.id"
+            LEFT JOIN origin org ON o.customer_address_origin_id = org.id
+            LEFT JOIN vehicles v ON o.assigned_vehicle_id = v.vehicle_id"
             . $sql_where . " ORDER BY o.updated_at DESC";
 
 $stmt = $conn->prepare($sql_data);
@@ -117,6 +120,8 @@ fputcsv($output, [
     'ชื่อลูกค้า', 
     'พนักงานขาย', 
     'ต้นทางขนส่ง', 
+    'ปลายทาง', 
+    'ประเภทรถ',
     'สถานที่ส่ง', 
     'สถานะ', 
     'อัปเดตล่าสุด'
@@ -130,6 +135,8 @@ if ($result->num_rows > 0) {
             $row['custname'],
             $row['salesman_info'],
             $row['transport_origin_name'],
+            $row['destination_address'] ?: '-',
+            $row['vehicle_type'] ?: '-',
             $row['shipaddr'],
             $row['status'],
             $row['updated_at']
