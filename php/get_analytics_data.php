@@ -45,6 +45,26 @@ if ($action == 'get_amphoes') {
     exit;
 }
 
+if ($action == 'get_customers') {
+    $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+    $customers = [];
+    $sql_c = "SELECT cs.custname, COUNT(o.order_id) as order_count 
+              FROM cssale cs 
+              INNER JOIN orders o ON o.cssale_docno = cs.docno 
+              WHERE cs.custname != '' AND cs.custname IS NOT NULL";
+    if (!empty($search)) {
+        $search_like = '%' . $conn->real_escape_string($search) . '%';
+        $sql_c .= " AND cs.custname LIKE '{$search_like}'";
+    }
+    $sql_c .= " GROUP BY cs.custname ORDER BY order_count DESC, cs.custname ASC LIMIT 50";
+    $result_c = $conn->query($sql_c);
+    while ($row = $result_c->fetch_assoc()) {
+        $customers[] = ['custname' => $row['custname'], 'order_count' => (int)$row['order_count']];
+    }
+    echo json_encode(['status' => 'success', 'data' => $customers], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 if ($action == 'get_filter_options') {
     // Vehicle Types
     $vehicle_types = [];
@@ -92,6 +112,7 @@ $filter_province = isset($_GET['province']) && !empty($_GET['province']) ? $_GET
 $filter_amphoe = isset($_GET['amphoe']) && !empty($_GET['amphoe']) ? $_GET['amphoe'] : '';
 $filter_vehicle_type = isset($_GET['vehicle_type']) && !empty($_GET['vehicle_type']) ? $_GET['vehicle_type'] : '';
 $filter_driver_id = isset($_GET['driver_id']) && !empty($_GET['driver_id']) ? (int)$_GET['driver_id'] : 0;
+$filter_customer = isset($_GET['customer']) && !empty($_GET['customer']) ? trim($_GET['customer']) : '';
 $top_n = isset($_GET['top_n']) && is_numeric($_GET['top_n']) ? (int)$_GET['top_n'] : 10;
 if (!in_array($top_n, [10, 20, 30, 40, 50])) { $top_n = 10; }
 
@@ -145,10 +166,19 @@ if ($filter_driver_id > 0) {
     $param_types .= "i";
 }
 
+// กรองตามลูกค้า
+if (!empty($filter_customer)) {
+    $where_conditions[] = "cs_filter.custname = ?";
+    $params[] = $filter_customer;
+    $param_types .= "s";
+    $join_cssale_filter = true;
+}
+
 $sql_where = " WHERE " . implode(" AND ", $where_conditions);
 $sql_extra_joins = "";
 if ($join_origin) $sql_extra_joins .= " LEFT JOIN origin og_filter ON o.customer_address_origin_id = og_filter.id ";
 if ($join_vehicles) $sql_extra_joins .= " LEFT JOIN vehicles v_filter ON o.assigned_vehicle_id = v_filter.vehicle_id ";
+if (!empty($filter_customer)) $sql_extra_joins .= " LEFT JOIN cssale cs_filter ON o.cssale_docno = cs_filter.docno COLLATE utf8mb4_unicode_ci ";
 
 try {
     // --- 1. Order Statistics ---

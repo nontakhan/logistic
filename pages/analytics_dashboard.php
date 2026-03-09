@@ -55,6 +55,8 @@ $default_date_end = date('Y-m-d');
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap4-theme@1.0.0/dist/select2-bootstrap4.min.css" rel="stylesheet">
     
     <style>
         :root {
@@ -479,6 +481,12 @@ $default_date_end = date('Y-m-d');
                             <option value="">กำลังโหลด...</option>
                         </select>
                     </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <label><i class="fas fa-user mr-1"></i>ลูกค้า</label>
+                        <select class="form-control" id="filter_customer">
+                            <option value="">ลูกค้าทั้งหมด</option>
+                        </select>
+                    </div>
                     <div class="col-lg-3 col-md-6 mb-3 d-flex align-items-end">
                         <button type="submit" class="btn btn-search btn-block">
                             <i class="fas fa-search mr-1"></i>ค้นหา / กรอง
@@ -634,6 +642,7 @@ $default_date_end = date('Y-m-d');
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <script>
         // Register datalabels plugin
@@ -657,7 +666,8 @@ $default_date_end = date('Y-m-d');
                 amphoe: $('#filter_amphoe').val() || '',
                 vehicle_type: $('#filter_vehicle_type').val() || '',
                 driver_id: $('#filter_driver').val() || '',
-                top_n: $('#topNSelect').val() || 10
+                top_n: $('#topNSelect').val() || 10,
+                customer: $('#filter_customer').val() || ''
             });
 
             showLoading();
@@ -698,6 +708,34 @@ $default_date_end = date('Y-m-d');
                     $('#filter_driver').html(dHtml);
                 }
             });
+        }
+
+        function initCustomerSelect2() {
+            $('#filter_customer').select2({
+                theme: 'bootstrap4',
+                placeholder: 'ค้นหาลูกค้า...',
+                allowClear: true,
+                minimumInputLength: 0,
+                ajax: {
+                    url: '<?php echo BASE_URL; ?>php/get_analytics_data.php?action=get_customers',
+                    dataType: 'json',
+                    delay: 300,
+                    data: function(params) {
+                        return { search: params.term || '' };
+                    },
+                    processResults: function(response) {
+                        if (response.status === 'success') {
+                            const results = [{ id: '', text: 'ลูกค้าทั้งหมด' }]
+                                .concat(response.data.map(c => ({ id: c.custname, text: c.custname + ' (' + c.order_count + ')' })));
+                            return { results };
+                        }
+                        return { results: [] };
+                    },
+                    cache: true
+                }
+            });
+            // Trigger fetchAnalytics on customer change
+            $('#filter_customer').on('change', function() { fetchAnalytics(); });
         }
 
         // Load Amphoes on Province Change
@@ -915,6 +953,7 @@ $default_date_end = date('Y-m-d');
         $(document).ready(function() {
             fetchAnalytics();
             loadFilterOptions();
+            initCustomerSelect2();
             $('#filterForm').on('submit', function(e) { e.preventDefault(); fetchAnalytics(); });
             $('#topNSelect').on('change', function() { fetchAnalytics(); });
         });
