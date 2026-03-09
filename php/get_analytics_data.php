@@ -92,6 +92,8 @@ $filter_province = isset($_GET['province']) && !empty($_GET['province']) ? $_GET
 $filter_amphoe = isset($_GET['amphoe']) && !empty($_GET['amphoe']) ? $_GET['amphoe'] : '';
 $filter_vehicle_type = isset($_GET['vehicle_type']) && !empty($_GET['vehicle_type']) ? $_GET['vehicle_type'] : '';
 $filter_driver_id = isset($_GET['driver_id']) && !empty($_GET['driver_id']) ? (int)$_GET['driver_id'] : 0;
+$top_n = isset($_GET['top_n']) && is_numeric($_GET['top_n']) ? (int)$_GET['top_n'] : 10;
+if (!in_array($top_n, [10, 20, 30, 40, 50])) { $top_n = 10; }
 
 // กรองตามวันที่
 if (!empty($filter_date_start)) {
@@ -390,7 +392,7 @@ try {
                      . $sql_where . " 
                      GROUP BY c.custname 
                      HAVING customer_name != 'ไม่ระบุ' 
-                     ORDER BY count DESC LIMIT 10";
+                     ORDER BY count DESC LIMIT {$top_n}";
 
     $stmt = $conn->prepare($sql_customer);
     if (!empty($params)) {

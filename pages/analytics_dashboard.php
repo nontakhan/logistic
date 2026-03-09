@@ -596,8 +596,21 @@ $default_date_end = date('Y-m-d');
         <div class="row mb-4">
             <div class="col-12">
                 <div class="chart-card">
-                    <h5><i class="fas fa-users"></i>Top 10 ลูกค้าที่มีการสั่งสินค้ามากที่สุด</h5>
-                    <div class="chart-container" style="height: 400px;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0"><i class="fas fa-users"></i><span id="customerChartTitle">Top 10</span> ลูกค้าที่มีการสั่งสินค้ามากที่สุด</h5>
+                        <div class="d-flex align-items-center">
+                            <label for="topNSelect" class="mr-2 mb-0 text-muted" style="font-size:0.9rem;">แสดง:</label>
+                            <select id="topNSelect" class="form-control form-control-sm" style="width:80px;">
+                                <option value="10" selected>10</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
+                                <option value="40">40</option>
+                                <option value="50">50</option>
+                            </select>
+                            <span class="ml-2 text-muted" style="font-size:0.9rem;">รายการ</span>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="customerChartContainer" style="height: 400px;">
                         <canvas id="customerChart"></canvas>
                     </div>
                 </div>
@@ -643,7 +656,8 @@ $default_date_end = date('Y-m-d');
                 province: $('#transport_province').val() || '',
                 amphoe: $('#filter_amphoe').val() || '',
                 vehicle_type: $('#filter_vehicle_type').val() || '',
-                driver_id: $('#filter_driver').val() || ''
+                driver_id: $('#filter_driver').val() || '',
+                top_n: $('#topNSelect').val() || 10
             });
 
             showLoading();
@@ -730,6 +744,10 @@ $default_date_end = date('Y-m-d');
             updateHorizontalBarChart('location', 'locationChart', data.location_rankings, colors.teal, true);
             
             // Customer Chart
+            const topN = parseInt($('#topNSelect').val()) || 10;
+            const chartHeight = Math.max(400, topN * 36);
+            $('#customerChartContainer').css('height', chartHeight + 'px');
+            $('#customerChartTitle').text('Top ' + topN);
             updateHorizontalBarChart('customer', 'customerChart', data.customer_rankings, colors.pink, true);
 
             updateLineChart('monthly', 'monthlyChart', data.monthly_summary);
@@ -898,6 +916,7 @@ $default_date_end = date('Y-m-d');
             fetchAnalytics();
             loadFilterOptions();
             $('#filterForm').on('submit', function(e) { e.preventDefault(); fetchAnalytics(); });
+            $('#topNSelect').on('change', function() { fetchAnalytics(); });
         });
     </script>
 </body>
