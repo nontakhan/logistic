@@ -181,304 +181,181 @@ if ($join_vehicles) $sql_extra_joins .= " LEFT JOIN vehicles v_filter ON o.assig
 if (!empty($filter_customer)) $sql_extra_joins .= " LEFT JOIN cssale cs_filter ON o.cssale_docno = cs_filter.docno COLLATE utf8mb4_unicode_ci ";
 
 try {
-    // --- 1. Order Statistics ---
-    $order_stats = [
-        'total' => 0, 'pending_ack' => 0, 'pending_assign' => 0,
-        'pending_delivery' => 0, 'delivered' => 0, 'cancelled' => 0
-    ];
+    // --- SINGLE QUERY: ดึงข้อมูลทั้งหมดครั้งเดียว แล้วประมวลผลใน PHP ---
+    $sql_main = "SELECT 
+                    o.order_id,
+                    o.status,
+                    o.order_date,
+                    o.transport_origin_id,
+                    o.assigned_staff_id,
+                    o.assigned_vehicle_id,
+                    COALESCE(t.origin_name, 'ไม่ระบุ') AS branch_name,
+                    COALESCE(v.vehicle_name, 'ไม่ระบุ') AS vehicle_name,
+                    COALESCE(s.staff_name, 'ไม่ระบุ') AS staff_name,
+                    COALESCE(c.custname, 'ไม่ระบุ') AS custname,
+                    COALESCE(og.province, '') AS province,
+                    COALESCE(og.amphoe, '') AS amphoe,
+                    COALESCE(og.tambon, '') AS tambon,
+                    COALESCE(og.moo, '') AS moo,
+                    COALESCE(og.mooban, '') AS mooban
+                FROM orders o
+                LEFT JOIN transport_origins t ON o.transport_origin_id = t.transport_origin_id
+                LEFT JOIN vehicles v ON o.assigned_vehicle_id = v.vehicle_id
+                LEFT JOIN staff s ON o.assigned_staff_id = s.staff_id
+                LEFT JOIN cssale c ON o.cssale_docno = c.docno COLLATE utf8mb4_unicode_ci
+                LEFT JOIN origin og ON o.customer_address_origin_id = og.id"
+                . $sql_extra_joins
+                . $sql_where;
 
-    $sql_stats = "SELECT 
-                    COUNT(*) as total,
-                    SUM(CASE WHEN status = 'รอรับเรื่อง' THEN 1 ELSE 0 END) AS pending_ack,
-                    SUM(CASE WHEN status = 'รับเรื่อง' THEN 1 ELSE 0 END) AS pending_assign,
-                    SUM(CASE WHEN status = 'รอส่งของ' THEN 1 ELSE 0 END) AS pending_delivery,
-                    SUM(CASE WHEN status = 'ส่งของแล้ว' THEN 1 ELSE 0 END) AS delivered,
-                    SUM(CASE WHEN status = 'ยกเลิก' THEN 1 ELSE 0 END) AS cancelled
-                  FROM orders o" 
-                  . $sql_extra_joins 
-                  . $sql_where;
-
-    $stmt = $conn->prepare($sql_stats);
+    $stmt = $conn->prepare($sql_main);
     if (!empty($params)) {
         $stmt->bind_param($param_types, ...$params);
     }
     $stmt->execute();
     $result = $stmt->get_result();
-    if ($row = $result->fetch_assoc()) {
-        $order_stats['total'] = (int)($row['total'] ?? 0);
-        $order_stats['pending_ack'] = (int)($row['pending_ack'] ?? 0);
-        $order_stats['pending_assign'] = (int)($row['pending_assign'] ?? 0);
-        $order_stats['pending_delivery'] = (int)($row['pending_delivery'] ?? 0);
-        $order_stats['delivered'] = (int)($row['delivered'] ?? 0);
-        $order_stats['cancelled'] = (int)($row['cancelled'] ?? 0);
+
+    // --- ประมวลผลทั้งหมดใน PHP จากข้อมูลที่ดึงมาครั้งเดียว ---
+    $order_stats = ['total' => 0, 'pending_ack' => 0, 'pending_assign' => 0,
+                    'pending_delivery' => 0, 'delivered' => 0, 'cancelled' => 0];
+    $status_map      = [];
+    $branch_map      = [];
+    $vehicle_map     = [];
+    $staff_map       = [];
+    $customer_map    = [];
+    $province_map    = [];
+    $amphoe_map      = [];
+    $tambon_map      = [];
+    $location_map    = [];
+    $monthly_raw     = [];
+
+    while ($row = $result->fetch_assoc()) {
+        $status = $row['status'] ?? 'ไม่ระบุ';
+
+        // 1. Stats
+        $order_stats['total']++;
+        if ($status === 'รอรับเรื่อง')  $order_stats['pending_ack']++;
+        if ($status === 'รับเรื่อง')    $order_stats['pending_assign']++;
+        if ($status === 'รอส่งของ')    $order_stats['pending_delivery']++;
+        if ($status === 'ส่งของแล้ว') $order_stats['delivered']++;
+        if ($status === 'ยกเลิก')      $order_stats['cancelled']++;
+
+        // 2. Status distribution
+        $status_map[$status] = ($status_map[$status] ?? 0) + 1;
+
+        // 3. Branch
+        $branch = $row['branch_name'];
+        $branch_map[$branch] = ($branch_map[$branch] ?? 0) + 1;
+
+        // 4. Vehicle
+        $vname = trim($row['vehicle_name']) ?: 'ไม่ระบุ';
+        $vehicle_map[$vname] = ($vehicle_map[$vname] ?? 0) + 1;
+
+        // 5. Staff (driver) - skip unassigned
+        if (!empty($row['assigned_staff_id'])) {
+            $sname = $row['staff_name'];
+            $staff_map[$sname] = ($staff_map[$sname] ?? 0) + 1;
+        }
+
+        // 6. Customer
+        $cname = $row['custname'];
+        if ($cname !== 'ไม่ระบุ') {
+            $customer_map[$cname] = ($customer_map[$cname] ?? 0) + 1;
+        }
+
+        // 7-9. Province / Amphoe / Tambon / Location
+        $prov = $row['province'];
+        $amph = $row['amphoe'];
+        $tamb = $row['tambon'];
+        $moo  = $row['moo'];
+        $moob = $row['mooban'];
+
+        if (!empty($prov)) {
+            $province_map[$prov] = ($province_map[$prov] ?? 0) + 1;
+            if (!empty($amph)) {
+                $amphoe_key = "$prov > $amph";
+                $amphoe_map[$amphoe_key] = ($amphoe_map[$amphoe_key] ?? 0) + 1;
+                if (!empty($tamb)) {
+                    $tambon_key = "$prov > $amph > $tamb";
+                    $tambon_map[$tambon_key] = ($tambon_map[$tambon_key] ?? 0) + 1;
+                }
+            }
+            $loc = trim("$prov $amph $tamb $moo $moob");
+            $loc = preg_replace('/\s+/', ' ', $loc);
+            if (!empty($loc)) {
+                $location_map[$loc] = ($location_map[$loc] ?? 0) + 1;
+            }
+        }
+
+        // 10. Monthly
+        $month_key = date('Y-m-01', strtotime($row['order_date']));
+        $monthly_raw[$month_key] = ($monthly_raw[$month_key] ?? 0) + 1;
     }
     $stmt->close();
 
-    // --- 2. Status Distribution ---
+    // --- แปลงข้อมูลเป็น format ที่ frontend ต้องการ ---
+
+    // Status distribution
     $status_distribution = [];
-    $sql_status = "SELECT status, COUNT(*) as count FROM orders o" 
-                  . $sql_extra_joins 
-                  . $sql_where . " GROUP BY status ORDER BY count DESC";
-    $stmt = $conn->prepare($sql_status);
-    if (!empty($params)) {
-        $stmt->bind_param($param_types, ...$params);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $status_distribution[] = ['label' => $row['status'] ?? 'ไม่ระบุ', 'value' => (int)$row['count']];
-    }
-    $stmt->close();
+    arsort($status_map);
+    foreach ($status_map as $k => $v) $status_distribution[] = ['label' => $k, 'value' => $v];
 
-    // --- 3. Branch Rankings ---
+    // Branch rankings
+    arsort($branch_map);
     $branch_rankings = [];
-    $sql_branch = "SELECT COALESCE(t.origin_name, 'ไม่ระบุ') as origin_name, COUNT(o.order_id) as count 
-                   FROM orders o 
-                   LEFT JOIN transport_origins t ON o.transport_origin_id = t.transport_origin_id" 
-                   . $sql_extra_joins 
-                   . $sql_where . " GROUP BY t.origin_name ORDER BY count DESC LIMIT 10";
-    $stmt = $conn->prepare($sql_branch);
-    if (!empty($params)) {
-        $stmt->bind_param($param_types, ...$params);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $branch_rankings[] = ['label' => $row['origin_name'], 'value' => (int)$row['count']];
-    }
-    $stmt->close();
+    foreach (array_slice($branch_map, 0, 10, true) as $k => $v) $branch_rankings[] = ['label' => $k, 'value' => $v];
 
-    // --- 4. Vehicle Types ---
+    // Vehicle types
+    arsort($vehicle_map);
     $vehicle_types = [];
-    $sql_vehicle = "SELECT 
-                        CASE 
-                            WHEN TRIM(v.vehicle_name) = '' OR v.vehicle_name IS NULL THEN 'ไม่ระบุ'
-                            ELSE v.vehicle_name 
-                        END as clean_vehicle_name, 
-                        COUNT(o.order_id) as count 
-                    FROM orders o 
-                    LEFT JOIN vehicles v ON o.assigned_vehicle_id = v.vehicle_id" 
-                    . $sql_extra_joins 
-                    . $sql_where . " 
-                    GROUP BY clean_vehicle_name 
-                    ORDER BY count DESC LIMIT 10";
-                    
-    $stmt = $conn->prepare($sql_vehicle);
-    if (!empty($params)) {
-        $stmt->bind_param($param_types, ...$params);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $vehicle_types[] = ['label' => $row['clean_vehicle_name'], 'value' => (int)$row['count']];
-    }
-    $stmt->close();
+    foreach (array_slice($vehicle_map, 0, 10, true) as $k => $v) $vehicle_types[] = ['label' => $k, 'value' => $v];
 
-    // --- 5. Driver Performance (พนักงานขับรถ Top 10) ---
+    // Driver performance
+    arsort($staff_map);
     $driver_performance = [];
-    $sql_driver = "SELECT COALESCE(s.staff_name, 'ไม่ระบุ') as staff_name, COUNT(o.order_id) as count 
-                   FROM orders o 
-                   LEFT JOIN staff s ON o.assigned_staff_id = s.staff_id" 
-                   . $sql_extra_joins 
-                   . $sql_where . " AND o.assigned_staff_id IS NOT NULL
-                   GROUP BY s.staff_id, s.staff_name ORDER BY count DESC LIMIT 10";
-    $stmt = $conn->prepare($sql_driver);
-    if (!empty($params)) {
-        $stmt->bind_param($param_types, ...$params);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $driver_performance[] = ['name' => $row['staff_name'], 'count' => (int)$row['count']];
-    }
-    $stmt->close();
+    foreach (array_slice($staff_map, 0, 10, true) as $k => $v) $driver_performance[] = ['name' => $k, 'count' => $v];
 
-    // --- 6. Top 10 Provinces ---
+    // Top provinces
+    arsort($province_map);
     $top_provinces = [];
-    $sql_province = "SELECT COALESCE(og.province, 'ไม่ระบุ') as province, COUNT(o.order_id) as count 
-                     FROM orders o 
-                     LEFT JOIN origin og ON o.customer_address_origin_id = og.id" 
-                     . $sql_extra_joins 
-                     . $sql_where . " 
-                     GROUP BY og.province 
-                     HAVING province != 'ไม่ระบุ' AND province != ''
-                     ORDER BY count DESC LIMIT 10";
-    $stmt = $conn->prepare($sql_province);
-    if (!empty($params)) {
-        $stmt->bind_param($param_types, ...$params);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $top_provinces[] = ['label' => $row['province'], 'value' => (int)$row['count']];
-    }
-    $stmt->close();
+    foreach (array_slice($province_map, 0, 10, true) as $k => $v) $top_provinces[] = ['label' => $k, 'value' => $v];
 
-    // --- 7. Top 10 Amphoes ---
+    // Top amphoes
+    arsort($amphoe_map);
     $top_amphoes = [];
-    $sql_amphoe = "SELECT CONCAT(COALESCE(og.province, ''), ' > ', COALESCE(og.amphoe, '')) as amphoe_full, COUNT(o.order_id) as count 
-                  FROM orders o 
-                  LEFT JOIN origin og ON o.customer_address_origin_id = og.id" 
-                  . $sql_extra_joins 
-                  . $sql_where . " 
-                  GROUP BY og.province, og.amphoe 
-                  HAVING amphoe_full != ' > ' AND amphoe_full != '' AND amphoe_full != 'ไม่ระบุ > '
-                  ORDER BY count DESC LIMIT 10";
-    $stmt = $conn->prepare($sql_amphoe);
-    if (!empty($params)) {
-        $stmt->bind_param($param_types, ...$params);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $top_amphoes[] = ['label' => $row['amphoe_full'], 'value' => (int)$row['count']];
-    }
-    $stmt->close();
+    foreach (array_slice($amphoe_map, 0, 10, true) as $k => $v) $top_amphoes[] = ['label' => $k, 'value' => $v];
 
-    // --- 8. Top 10 Tambons ---
+    // Top tambons
+    arsort($tambon_map);
     $top_tambons = [];
-    $sql_tambon = "SELECT CONCAT(COALESCE(og.province, ''), ' > ', COALESCE(og.amphoe, ''), ' > ', COALESCE(og.tambon, '')) as tambon_full, COUNT(o.order_id) as count 
-                   FROM orders o 
-                   LEFT JOIN origin og ON o.customer_address_origin_id = og.id" 
-                   . $sql_extra_joins 
-                   . $sql_where . " 
-                   GROUP BY og.province, og.amphoe, og.tambon 
-                   HAVING tambon_full != ' >  > ' AND tambon_full != '' AND tambon_full != 'ไม่ระบุ >  > '
-                   ORDER BY count DESC LIMIT 10";
-    $stmt = $conn->prepare($sql_tambon);
-    if (!empty($params)) {
-        $stmt->bind_param($param_types, ...$params);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $top_tambons[] = ['label' => $row['tambon_full'], 'value' => (int)$row['count']];
-    }
-    $stmt->close();
+    foreach (array_slice($tambon_map, 0, 10, true) as $k => $v) $top_tambons[] = ['label' => $k, 'value' => $v];
 
-    // --- 9. สถานที่จัดส่งยอดนิยม (Grouped Location) ---
+    // Location rankings
+    arsort($location_map);
     $location_rankings = [];
-    if ($join_origin) {
-        // ถ้ามีการ join origin แล้ว (จาก filter) ต้องระวังเรื่อง alias
-        // แต่ในที่นี้เราใช้ og_filter สำหรับ filter parameter
-        // ส่วนการ group by location เราอาจจะใช้ og_filter เลยก็ได้ถ้ามัน join แล้ว
-        // แต่เพื่อความชัวร์และง่าย เรา join ใหม่ใน alias ที่ต่างกันหรือใช้ alias เดิม?
-        // ถ้าใช้ og_filter มันจะตัด row ที่ไม่ตรง filter ออกไปแล้ว ซึ่งถูกต้อง
-        // ดังนั้นเราสามารถ select จาก og_filter ได้เลยถ้า join_origin เป็น true
-        
-        $sql_location = "SELECT CONCAT(
-                            COALESCE(og_filter.province, ''), ' ',
-                            COALESCE(og_filter.amphoe, ''), ' ',
-                            COALESCE(og_filter.tambon, ''), ' ',
-                            COALESCE(og_filter.moo, ''), ' ',
-                            COALESCE(og_filter.mooban, '')
-                        ) as full_location, 
-                        COUNT(o.order_id) as count 
-                        FROM orders o " 
-                        . $sql_extra_joins 
-                        . $sql_where . " 
-                        GROUP BY full_location 
-                        HAVING full_location != ''
-                        ORDER BY count DESC LIMIT 10";
-    } else {
-        $sql_location = "SELECT CONCAT(
-                            COALESCE(og.province, ''), ' ',
-                            COALESCE(og.amphoe, ''), ' ',
-                            COALESCE(og.tambon, ''), ' ',
-                            COALESCE(og.moo, ''), ' ',
-                            COALESCE(og.mooban, '')
-                        ) as full_location, 
-                        COUNT(o.order_id) as count 
-                        FROM orders o 
-                        LEFT JOIN origin og ON o.customer_address_origin_id = og.id" 
-                        . $sql_extra_joins
-                        . $sql_where . " 
-                        GROUP BY full_location 
-                        HAVING full_location != ''
-                        ORDER BY count DESC LIMIT 10";
-    }
+    foreach (array_slice($location_map, 0, 10, true) as $k => $v) $location_rankings[] = ['label' => $k, 'value' => $v];
 
-    $stmt = $conn->prepare($sql_location);
-    if (!empty($params)) {
-        $stmt->bind_param($param_types, ...$params);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $location = trim($row['full_location']);
-        $location = preg_replace('/\s+/', ' ', $location);
-        if (empty($location)) $location = 'ไม่ระบุ';
-        $location_rankings[] = ['label' => $location, 'value' => (int)$row['count']];
-    }
-    $stmt->close();
-
-
-    // --- 9. Top 10 Customers ---
+    // Customer rankings
+    arsort($customer_map);
     $customer_rankings = [];
-    $sql_customer = "SELECT COALESCE(c.custname, 'ไม่ระบุ') as customer_name, COUNT(o.order_id) as count 
-                     FROM orders o 
-                     LEFT JOIN cssale c ON o.cssale_docno = c.docno " 
-                     . $sql_extra_joins 
-                     . $sql_where . " 
-                     GROUP BY c.custname 
-                     HAVING customer_name != 'ไม่ระบุ' 
-                     ORDER BY count DESC LIMIT {$top_n}";
+    foreach (array_slice($customer_map, 0, $top_n, true) as $k => $v) $customer_rankings[] = ['label' => $k, 'value' => $v];
 
-    $stmt = $conn->prepare($sql_customer);
-    if (!empty($params)) {
-        $stmt->bind_param($param_types, ...$params);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $customer_rankings[] = ['label' => $row['customer_name'], 'value' => (int)$row['count']];
-    }
-    $stmt->close();
-
-    // --- 10. Monthly Summary (Dynamic based on filter) ---
+    // Monthly summary
     $monthly_summary = [];
     $months = [];
-    
-    // Determine date range for the chart
     $chart_start = $filter_date_start ? $filter_date_start : date('Y-m-01', strtotime("-5 months"));
-    $chart_end = $filter_date_end ? $filter_date_end : date('Y-m-d');
-
-    // Generate month keys
+    $chart_end   = $filter_date_end   ? $filter_date_end   : date('Y-m-d');
     $start = new DateTime($chart_start);
     $start->modify('first day of this month');
     $end = new DateTime($chart_end);
     $end->modify('first day of this month');
-    
-    // Safety check: limit to 24 months to prevent massive loops if user selects huge range
     $interval = DateInterval::createFromDateString('1 month');
     $period = new DatePeriod($start, $interval, $end->modify('+1 day'));
-    
     $loop_count = 0;
     foreach ($period as $dt) {
-        if ($loop_count++ > 24) break; 
+        if ($loop_count++ > 24) break;
         $date_key = $dt->format("Y-m-01");
-        $months[$date_key] = ['label' => $dt->format("m/Y"), 'value' => 0];
+        $months[$date_key] = ['label' => $dt->format("m/Y"), 'value' => $monthly_raw[$date_key] ?? 0];
     }
-
-    $sql_monthly = "SELECT DATE_FORMAT(o.order_date, '%Y-%m-01') as month, COUNT(*) as count 
-                    FROM orders o" 
-                    . $sql_extra_joins 
-                    . $sql_where . " 
-                    GROUP BY month ORDER BY month ASC";
-                    
-    $stmt = $conn->prepare($sql_monthly);
-    if (!empty($params)) {
-        $stmt->bind_param($param_types, ...$params);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $month_key = $row['month'];
-        if (isset($months[$month_key])) {
-            $months[$month_key]['value'] = (int)$row['count'];
-        }
-    }
-    $stmt->close();
     $monthly_summary = array_values($months);
 
     // --- ส่ง Response ---
