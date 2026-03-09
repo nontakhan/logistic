@@ -118,6 +118,16 @@ $result = $stmt->get_result();
                                 <td><?php echo htmlspecialchars($row['priority']); ?></td>
                                 <td class="action-buttons">
                                     <button class="btn btn-warning btn-sm confirm-delivery-btn" data-orderid="<?php echo htmlspecialchars($row['order_id']); ?>" data-docno="<?php echo htmlspecialchars($row['cssale_docno']); ?>"><i class="fas fa-truck-loading"></i> ยืนยันการส่ง</button>
+                                    <button class="btn btn-info btn-sm edit-driver-btn" 
+                                            data-orderid="<?php echo htmlspecialchars($row['order_id']); ?>" 
+                                            data-docno="<?php echo htmlspecialchars($row['cssale_docno']); ?>" 
+                                            data-custname="<?php echo htmlspecialchars($row['custname']); ?>"
+                                            data-current-staff="<?php echo htmlspecialchars($row['assigned_staff_name']); ?>"
+                                            data-current-vehicle="<?php echo htmlspecialchars($row['assigned_vehicle_info']); ?>"
+                                            data-current-staff-id="<?php echo htmlspecialchars($row['assigned_staff_id'] ?? ''); ?>"
+                                            data-current-vehicle-id="<?php echo htmlspecialchars($row['assigned_vehicle_id'] ?? ''); ?>">
+                                        <i class="fas fa-user-edit"></i> แก้ไขคนขับ
+                                    </button>
                                     <?php if(has_role([2, 4])): ?>
                                     <button class="btn btn-danger btn-sm cancel-btn" data-orderid="<?php echo htmlspecialchars($row['order_id']); ?>" data-docno="<?php echo htmlspecialchars($row['cssale_docno']); ?>"><i class="fas fa-times-circle"></i> ยกเลิก</button>
                                     <?php endif; ?>
@@ -132,11 +142,212 @@ $result = $stmt->get_result();
         </div>
     </div>
 
+    <!-- Modal สำหรับแก้ไขคนขับรถ -->
+    <div class="modal fade" id="editDriverModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">แก้ไขคนขับรถ</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editDriverForm">
+                        <div class="form-group">
+                            <label for="editOrderInfo">ข้อมูลออเดอร์:</label>
+                            <input type="text" class="form-control" id="editOrderInfo" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="editCurrentStaff">คนขับปัจจุบัน:</label>
+                            <input type="text" class="form-control" id="editCurrentStaff" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="editCurrentVehicle">รถปัจจุบัน:</label>
+                            <input type="text" class="form-control" id="editCurrentVehicle" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="newStaff">คนขับใหม่:</label>
+                            <select class="form-control" id="newStaff" required>
+                                <option value="">-- เลือกคนขับ --</option>
+                                <?php
+                                $sql_staff = "SELECT staff_id, staff_name FROM staff ORDER BY staff_name";
+                                $result_staff = $conn->query($sql_staff);
+                                if ($result_staff && $result_staff->num_rows > 0) {
+                                    while($staff_row = $result_staff->fetch_assoc()) {
+                                        echo "<option value='" . htmlspecialchars($staff_row['staff_id']) . "'>" . htmlspecialchars($staff_row['staff_name']) . "</option>";
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="newVehicle">รถใหม่:</label>
+                            <select class="form-control" id="newVehicle" required>
+                                <option value="">-- เลือกรถ --</option>
+                                <?php
+                                $sql_vehicles = "SELECT vehicle_id, CONCAT(vehicle_name, ' (', vehicle_plate, ')') AS vehicle_info FROM vehicles ORDER BY vehicle_name";
+                                $result_vehicles = $conn->query($sql_vehicles);
+                                if ($result_vehicles && $result_vehicles->num_rows > 0) {
+                                    while($vehicle_row = $result_vehicles->fetch_assoc()) {
+                                        echo "<option value='" . htmlspecialchars($vehicle_row['vehicle_id']) . "'>" . htmlspecialchars($vehicle_row['vehicle_info']) . "</option>";
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <input type="hidden" id="editOrderId">
+                        <input type="hidden" id="editCurrentStaffId">
+                        <input type="hidden" id="editCurrentVehicleId">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" id="saveDriverBtn">บันทึกการเปลี่ยน</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function(){function t(){return"<?php echo BASE_URL;?>"}$("#orders-table-body").on("click",".confirm-delivery-btn",function(){const e=$(this).data("orderid"),o=$(this).data("docno");Swal.fire({title:"ยืนยันการส่งของ",text:`คุณต้องการยืนยันการส่งของสำหรับบิลเลขที่: ${o} ใช่หรือไม่?`,icon:"question",showCancelButton:!0,confirmButtonColor:"#ffc107",cancelButtonColor:"#d33",confirmButtonText:"ใช่, ยืนยันการส่ง!",cancelButtonText:"ยกเลิก"}).then(o=>{o.isConfirmed&&(Swal.fire({title:"กำลังดำเนินการ...",allowOutsideClick:!1,didOpen:()=>Swal.showLoading()}),$.ajax({url:t()+"php/confirm_delivery.php",type:"POST",data:{order_id:e},dataType:"json",success:function(t){Swal.close(),"success"===t.status?(Swal.fire({icon:"success",title:"ยืนยันการส่งสำเร็จ!",text:t.message,timer:1500,showConfirmButton:!1}),$("#order-row-"+e).fadeOut(500,function(){$(this).remove()})):Swal.fire({icon:"error",title:"เกิดข้อผิดพลาด!",text:t.message})},error:function(){Swal.close(),Swal.fire({icon:"error",title:"เกิดข้อผิดพลาดในการเชื่อมต่อ"})}}))})}),$("#orders-table-body").on("click",".cancel-btn",function(){const e=$(this).data("orderid"),o=$(this).data("docno");Swal.fire({title:"ยืนยันการยกเลิก",text:`คุณต้องการยกเลิกบิลเลขที่: ${o} ใช่หรือไม่?`,icon:"warning",showCancelButton:!0,confirmButtonColor:"#d33",cancelButtonColor:"#3085d6",confirmButtonText:"ใช่, ยกเลิกเลย!",cancelButtonText:"ไม่"}).then(o=>{o.isConfirmed&&(Swal.fire({title:"กำลังดำเนินการ...",allowOutsideClick:!1,didOpen:()=>Swal.showLoading()}),$.ajax({url:t()+"php/cancel_order.php",type:"POST",data:{order_id:e},dataType:"json",success:function(t){Swal.close(),"success"===t.status?(Swal.fire({icon:"success",title:"ยกเลิกสำเร็จ!",text:t.message,timer:1500,showConfirmButton:!1}),$("#order-row-"+e).fadeOut(500,function(){$(this).remove()})):Swal.fire({icon:"error",title:"เกิดข้อผิดพลาด!",text:t.message})},error:function(){Swal.close(),Swal.fire({icon:"error",title:"เกิดข้อผิดพลาดในการเชื่อมต่อ"})}}))})})});
+    </script>
+    
+    <script>
+        // Edit Driver Functionality
+        $(document).ready(function() {
+            // Open edit driver modal
+            $('#orders-table-body').on('click', '.edit-driver-btn', function() {
+                const orderId = $(this).data('orderid');
+                const docNo = $(this).data('docno');
+                const custName = $(this).data('custname');
+                const currentStaff = $(this).data('current-staff');
+                const currentVehicle = $(this).data('current-vehicle');
+                const currentStaffId = $(this).data('current-staff-id');
+                const currentVehicleId = $(this).data('current-vehicle-id');
+                
+                $('#editOrderId').val(orderId);
+                $('#editOrderInfo').val(`${docNo} - ${custName}`);
+                $('#editCurrentStaff').val(currentStaff || '-');
+                $('#editCurrentVehicle').val(currentVehicle || '-');
+                $('#editCurrentStaffId').val(currentStaffId || '');
+                $('#editCurrentVehicleId').val(currentVehicleId || '');
+                
+                // Set current values in dropdowns
+                $('#newStaff').val(currentStaffId || '');
+                $('#newVehicle').val(currentVehicleId || '');
+                
+                $('#editDriverModal').modal('show');
+            });
+            
+            // Save driver change
+            $('#saveDriverBtn').click(function() {
+                const orderId = $('#editOrderId').val();
+                const newStaffId = $('#newStaff').val();
+                const newVehicleId = $('#newVehicle').val();
+                const newStaffName = $('#newStaff option:selected').text();
+                const newVehicleInfo = $('#newVehicle option:selected').text();
+                
+                if (!newStaffId || !newVehicleId) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'กรุณาเลือกข้อมูลให้ครบ',
+                        text: 'โปรดเลือกทั้งคนขับและรถ'
+                    });
+                    return;
+                }
+                
+                const currentStaffId = $('#editCurrentStaffId').val();
+                const currentVehicleId = $('#editCurrentVehicleId').val();
+                
+                // Check if anything changed
+                if (newStaffId === currentStaffId && newVehicleId === currentVehicleId) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'ไม่มีการเปลี่ยนแปลง',
+                        text: 'ข้อมูลคนขับและรถยังเหมือนเดิม'
+                    });
+                    return;
+                }
+                
+                Swal.fire({
+                    title: 'ยืนยันการเปลี่ยนคนขับรถ',
+                    html: `คุณต้องการเปลี่ยนคนขับรถสำหรับออเดอร์: <strong>${$('#editOrderInfo').val()}</strong><br><br>
+                           จาก: <strong>${$('#editCurrentStaff').val()} / ${$('#editCurrentVehicle').val()}</strong><br>
+                           ไปเป็น: <strong>${newStaffName} / ${newVehicleInfo}</strong><br><br>
+                           ใช่หรือไม่?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#007bff',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'ใช่, เปลี่ยนเลย!',
+                    cancelButtonText: 'ไม่'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'กำลังดำเนินการ...',
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+                        
+                        $.ajax({
+                            url: '<?php echo BASE_URL; ?>php/update_driver.php',
+                            type: 'POST',
+                            data: {
+                                order_id: orderId,
+                                staff_id: newStaffId,
+                                vehicle_id: newVehicleId
+                            },
+                            dataType: 'json',
+                            success: function(response) {
+                                Swal.close();
+                                if (response.status === 'success') {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'เปลี่ยนคนขับสำเร็จ!',
+                                        text: response.message,
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    }).then(() => {
+                                        // Update the table
+                                        const row = $('#order-row-' + orderId);
+                                        row.find('td:eq(5)').text(newStaffName);
+                                        row.find('td:eq(6)').text(newVehicleInfo);
+                                        
+                                        // Update button data attributes
+                                        const editBtn = row.find('.edit-driver-btn');
+                                        editBtn.data('current-staff', newStaffName);
+                                        editBtn.data('current-vehicle', newVehicleInfo);
+                                        editBtn.data('current-staff-id', newStaffId);
+                                        editBtn.data('current-vehicle-id', newVehicleId);
+                                        
+                                        // Close modal
+                                        $('#editDriverModal').modal('hide');
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'เกิดข้อผิดพลาด!',
+                                        text: response.message
+                                    });
+                                }
+                            },
+                            error: function() {
+                                Swal.close();
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
+                                    text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
