@@ -26,7 +26,7 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
                 v.vehicle_plate,
                 CONCAT_WS(' ', org.moo, org.mooban, org.tambon, org.amphoe, org.province) as full_origin_address
             FROM orders o
-            LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci
+            LEFT JOIN cssale cs ON o.cssale_docno = cs.docno
             LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id
             LEFT JOIN staff st ON o.assigned_staff_id = st.staff_id
             LEFT JOIN vehicles v ON o.assigned_vehicle_id = v.vehicle_id

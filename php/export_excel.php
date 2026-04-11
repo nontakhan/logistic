@@ -62,13 +62,13 @@ if (!empty($filter_salesman)) {
     $param_types .= "s";
 }
 if (!empty($filter_date_start)) {
-    $where_clauses[] = "DATE(o.updated_at) >= ?";
-    $params[] = $filter_date_start;
+    $where_clauses[] = "o.updated_at >= ?";
+    $params[] = $filter_date_start . ' 00:00:00';
     $param_types .= "s";
 }
 if (!empty($filter_date_end)) {
-    $where_clauses[] = "DATE(o.updated_at) <= ?";
-    $params[] = $filter_date_end;
+    $where_clauses[] = "o.updated_at < ?";
+    $params[] = date('Y-m-d H:i:s', strtotime($filter_date_end . ' +1 day'));
     $param_types .= "s";
 }
 
@@ -91,7 +91,7 @@ $sql_data = "SELECT
                 o.status, 
                 o.updated_at
             FROM orders o
-            LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci
+            LEFT JOIN cssale cs ON o.cssale_docno = cs.docno
             LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id
             LEFT JOIN origin org ON o.customer_address_origin_id = org.id
             LEFT JOIN vehicles v ON o.assigned_vehicle_id = v.vehicle_id

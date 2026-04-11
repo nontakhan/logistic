@@ -1,48 +1,70 @@
 <?php
-// php/load_more_cssale.php - Lazy Load สำหรับ CSSale options
+// php/load_more_cssale.php - Lazy Load for CSSale options
 header('Content-Type: application/json');
 require_once 'db_connect.php';
 
 $response = ['status' => 'error', 'message' => 'ไม่พบข้อมูล'];
 
-$offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 20;
-$limit = 50; // โหลดครั้งละ 50 รายการ
+$limit = 50;
+$last_docdate = isset($_GET['last_docdate']) ? trim($_GET['last_docdate']) : '';
+$last_docno = isset($_GET['last_docno']) ? trim($_GET['last_docno']) : '';
 
-// *** SUPER FAST: Query สำหรับ Lazy Loading ***
-$sql = "SELECT cs.docno, cs.custname 
+$sql = "SELECT cs.docno, cs.custname, cs.docdate
         FROM cssale cs
-        WHERE cs.shipflag = 1 
+        WHERE cs.shipflag = 1
         AND NOT EXISTS (
-            SELECT 1 FROM orders o 
-            WHERE o.cssale_docno = cs.docno 
+            SELECT 1
+            FROM orders o
+            WHERE o.cssale_docno = cs.docno
             LIMIT 1
-        )
-        ORDER BY cs.docdate DESC, cs.docno DESC 
-        LIMIT ? OFFSET ?";
+        )";
+
+$params = [];
+$param_types = '';
+
+if ($last_docdate !== '' && $last_docno !== '') {
+    $sql .= " AND (cs.docdate < ? OR (cs.docdate = ? AND cs.docno < ?))";
+    $params[] = $last_docdate;
+    $params[] = $last_docdate;
+    $params[] = $last_docno;
+    $param_types .= 'sss';
+}
+
+$sql .= " ORDER BY cs.docdate DESC, cs.docno DESC LIMIT ?";
+$params[] = $limit;
+$param_types .= 'i';
 
 $stmt = $conn->prepare($sql);
 
 if ($stmt) {
-    $stmt->bind_param("ii", $limit, $offset);
+    $stmt->bind_param($param_types, ...$params);
     $stmt->execute();
     $result = $stmt->get_result();
 
     $options = [];
+    $next_cursor = null;
+
     if ($result && $result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
+        while ($row = $result->fetch_assoc()) {
             $options[] = [
                 'value' => htmlspecialchars($row['docno']),
                 'text' => htmlspecialchars($row['docno'] . ' - ' . $row['custname'])
             ];
+            $next_cursor = [
+                'docdate' => $row['docdate'],
+                'docno' => $row['docno']
+            ];
         }
-        
+
         $response = [
             'status' => 'success',
             'options' => $options,
             'loaded' => count($options),
-            'next_offset' => $offset + count($options)
+            'next_cursor' => $next_cursor,
+            'has_more' => count($options) === $limit
         ];
     }
+
     $stmt->close();
 } else {
     $response['message'] = 'เกิดข้อผิดพลาดในการเตรียมคำสั่ง SQL';

@@ -103,15 +103,16 @@ if ($is_ajax_request) {
     }
 
     // --- Query ข้อมูล + นับจำนวน (SQL_CALC_FOUND_ROWS) ---
-    $sql_data = "SELECT SQL_CALC_FOUND_ROWS 
-                    o.order_id, o.cssale_docno, cs.custname, cs.code as salesman_code, cs.lname as salesman_name, 
-                    t.origin_name, o.status, o.updated_at, 
-                    CONCAT_WS(', ', org.moo, org.mooban, org.tambon, org.amphoe, org.province) as destination_address
-                FROM orders o
-                LEFT JOIN cssale cs ON o.cssale_docno = cs.docno COLLATE utf8mb4_unicode_ci
+    $sql_from = " FROM orders o
+                LEFT JOIN cssale cs ON o.cssale_docno = cs.docno
                 LEFT JOIN transport_origins t ON o.transport_origin_id = t.transport_origin_id
-                LEFT JOIN origin org ON o.customer_address_origin_id = org.id
-                " . $sql_where . "
+                LEFT JOIN origin org ON o.customer_address_origin_id = org.id";
+
+    $sql_data = "SELECT 
+                    o.order_id, o.cssale_docno, cs.custname, cs.code as salesman_code, cs.lname as salesman_name, 
+                    t.origin_name AS transport_origin_name, o.status, o.updated_at, 
+                    CONCAT_WS(', ', org.moo, org.mooban, org.tambon, org.amphoe, org.province) as destination_address
+                " . $sql_from . $sql_where . "
                 ORDER BY o.updated_at DESC
                 LIMIT ? OFFSET ?";
 
@@ -133,8 +134,18 @@ if ($is_ajax_request) {
     }
 
     // ดึงจำนวนทั้งหมด
-    $result_total = $conn->query("SELECT FOUND_ROWS() as total");
-    $total_items = $result_total ? $result_total->fetch_assoc()['total'] : 0;
+    $sql_count = "SELECT COUNT(*) AS total" . $sql_from . $sql_where;
+    $stmt_count = $conn->prepare($sql_count);
+    $total_items = 0;
+    if ($stmt_count) {
+        if (!empty($params)) {
+            $stmt_count->bind_param($param_types, ...$params);
+        }
+        $stmt_count->execute();
+        $result_total = $stmt_count->get_result();
+        $total_items = $result_total ? (int)($result_total->fetch_assoc()['total'] ?? 0) : 0;
+        $stmt_count->close();
+    }
     $total_pages = ceil($total_items / $items_per_page);
 
     // เตรียมข้อมูล JSON

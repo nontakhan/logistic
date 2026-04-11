@@ -1,7 +1,6 @@
 <?php
-// pages/manage_cssale.php
 require_once '../php/check_session.php';
-require_login([4]); // Admin only
+require_login([4]);
 require_once '../php/db_connect.php';
 
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
@@ -9,63 +8,90 @@ $project_folder = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 $base_project_folder = str_replace('/pages', '', $project_folder);
 define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . $base_project_folder . '/');
 
-// Get filter parameters
 $filter_start = isset($_GET['filter_start']) ? $_GET['filter_start'] : date('Y-m-d', strtotime('-2 months'));
 $filter_end = isset($_GET['filter_end']) ? $_GET['filter_end'] : date('Y-m-d');
+$is_ajax_request = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
-$where_clauses = [];
-$params = [];
-$param_types = "";
+if ($is_ajax_request) {
+    header('Content-Type: application/json');
 
-// Date filter
-$where_clauses[] = "cs.docdate >= ? AND cs.docdate <= ?";
-$params[] = $filter_start;
-$params[] = $filter_end;
-$param_types .= "ss";
+    $items_per_page = 20;
+    $current_page = isset($_GET['page']) && is_numeric($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+    $offset = ($current_page - 1) * $items_per_page;
 
-// Only show cssale records that don't exist in orders
-$sql_where = " WHERE " . implode(" AND ", $where_clauses);
+    $params = [$filter_start, $filter_end];
+    $param_types = 'ss';
+    $sql_where = " WHERE cs.docdate >= ? AND cs.docdate <= ?
+                   AND NOT EXISTS (
+                       SELECT 1
+                       FROM orders o
+                       WHERE o.cssale_docno = cs.docno
+                   )";
 
-$sql = "SELECT cs.docno, cs.docdate, cs.custname, cs.shipaddr, cs.shipflag, cs.lname, cs.salesman 
-        FROM cssale cs 
-        LEFT JOIN orders o ON cs.docno = o.cssale_docno 
-        " . $sql_where . " 
-        AND o.cssale_docno IS NULL 
-        ORDER BY cs.docdate DESC, cs.docno DESC";
+    $sql_data = "SELECT
+                    cs.docno,
+                    cs.docdate,
+                    cs.custname,
+                    cs.shipaddr,
+                    cs.shipflag,
+                    cs.lname,
+                    cs.salesman
+                 FROM cssale cs"
+                 . $sql_where .
+                 " ORDER BY cs.docdate DESC, cs.docno DESC
+                   LIMIT ? OFFSET ?";
 
-$stmt = $conn->prepare($sql);
-if (!empty($params)) {
-    $stmt->bind_param($param_types, ...$params);
+    $stmt_data = $conn->prepare($sql_data);
+    $data_params = array_merge($params, [$items_per_page, $offset]);
+    $stmt_data->bind_param($param_types . 'ii', ...$data_params);
+    $stmt_data->execute();
+    $result = $stmt_data->get_result();
+
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $row['docdate_formatted'] = !empty($row['docdate']) ? date('d/m/Y', strtotime($row['docdate'])) : '-';
+        $rows[] = $row;
+    }
+    $stmt_data->close();
+
+    $sql_count = "SELECT COUNT(*) AS total FROM cssale cs" . $sql_where;
+    $stmt_count = $conn->prepare($sql_count);
+    $stmt_count->bind_param($param_types, ...$params);
+    $stmt_count->execute();
+    $total_items = (int) (($stmt_count->get_result()->fetch_assoc()['total'] ?? 0));
+    $stmt_count->close();
+
+    echo json_encode([
+        'status' => 'success',
+        'rows' => $rows,
+        'total_items' => $total_items,
+        'total_pages' => (int) ceil($total_items / $items_per_page),
+        'current_page' => $current_page
+    ]);
+    $conn->close();
+    exit;
 }
-$stmt->execute();
-$result = $stmt->get_result();
-?>
 
+$conn->close();
+?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>จัดการข้อมูล CSSale ที่ไม่ได้ใช้</title>
-    
     <link rel="icon" href="<?php echo BASE_URL; ?>assets/images/icon-192x192.png" sizes="192x192">
     <link rel="apple-touch-icon" href="<?php echo BASE_URL; ?>assets/images/icon-192x192.png">
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="<?php echo BASE_URL; ?>themes/modern_red_theme.css" rel="stylesheet">
-    <style> 
-        .action-buttons button, .action-buttons a { margin: 0 2px; } 
-        .filter-card {
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-        }
-        .table-responsive {
-            max-height: 70vh;
-            overflow-y: auto;
-        }
+    <style>
+        .action-buttons button { margin: 0 2px; }
+        .filter-card { box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        .table-responsive { background: #fff; border-radius: .5rem; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); }
     </style>
 </head>
 <body>
@@ -74,12 +100,12 @@ $result = $stmt->get_result();
             <h2 class="mb-0">จัดการข้อมูล CSSale ที่ไม่ได้ใช้</h2>
             <div>
                 <a href="<?php echo BASE_URL; ?>index.php" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left mr-1"></i>กลับหน้าหลัก</a>
-                <button class="btn btn-info btn-sm" onclick="location.reload();"><i class="fas fa-sync-alt"></i> รีเฟรช</button>
+                <button class="btn btn-info btn-sm" id="refreshBtn"><i class="fas fa-sync-alt"></i> รีเฟรช</button>
             </div>
         </div>
-        
+
         <div class="p-3 border rounded bg-light mb-4 filter-card">
-            <form method="GET" class="mb-0">
+            <form id="filterForm" class="mb-0">
                 <div class="form-row align-items-end">
                     <div class="col-md-3">
                         <label for="filter_start">วันที่เริ่มต้น</label>
@@ -91,7 +117,7 @@ $result = $stmt->get_result();
                     </div>
                     <div class="col-md-4">
                         <button class="btn btn-primary" type="submit"><i class="fas fa-filter"></i> กรองข้อมูล</button>
-                        <a href="<?php echo BASE_URL; ?>pages/manage_cssale.php" class="btn btn-outline-secondary ml-2"><i class="fas fa-redo"></i> รีเซ็ต</a>
+                        <button type="button" id="resetBtn" class="btn btn-outline-secondary ml-2"><i class="fas fa-redo"></i> รีเซ็ต</button>
                     </div>
                 </div>
             </form>
@@ -99,19 +125,17 @@ $result = $stmt->get_result();
 
         <div class="alert alert-info d-flex justify-content-between align-items-center">
             <div>
-                <i class="fas fa-info-circle"></i> 
-                <strong>ข้อมูลนี้แสดงเฉพาะรายการจากตาราง CSSale ที่ยังไม่มีในตาราง Orders</strong> 
-                (<?php echo $result->num_rows; ?> รายการ)
+                <i class="fas fa-info-circle"></i>
+                <strong>ข้อมูลนี้แสดงเฉพาะรายการจากตาราง CSSale ที่ยังไม่มีในตาราง Orders</strong>
+                <span id="items-count-info" class="ml-2">กำลังโหลดข้อมูล...</span>
             </div>
-            <?php if ($result && $result->num_rows > 0): ?>
-            <button class="btn btn-danger btn-sm delete-all-btn" id="deleteAllBtn">
-                <i class="fas fa-trash-alt"></i> ลบทั้งหมด (<?php echo $result->num_rows; ?> รายการ)
+            <button class="btn btn-danger btn-sm" id="deleteAllBtn" style="display:none;">
+                <i class="fas fa-trash-alt"></i> ลบทั้งหมด
             </button>
-            <?php endif; ?>
         </div>
 
         <div class="table-responsive">
-            <table class="table table-bordered table-hover table-striped">
+            <table class="table table-bordered table-hover table-striped mb-0">
                 <thead class="thead-light sticky-top">
                     <tr>
                         <th>เลขที่บิล</th>
@@ -125,36 +149,13 @@ $result = $stmt->get_result();
                     </tr>
                 </thead>
                 <tbody id="cssale-table-body">
-                    <?php if ($result && $result->num_rows > 0): ?>
-                        <?php while($row = $result->fetch_assoc()): ?>
-                            <tr id="cssale-row-<?php echo htmlspecialchars($row['docno']); ?>">
-                                <td><?php echo htmlspecialchars($row['docno']); ?></td>
-                                <td><?php echo date("d/m/Y", strtotime($row['docdate'])); ?></td>
-                                <td><?php echo htmlspecialchars($row['custname']); ?></td>
-                                <td><?php echo nl2br(htmlspecialchars($row['shipaddr'])); ?></td>
-                                <td>
-                                    <?php if ($row['shipflag'] == 1): ?>
-                                        <span class="badge badge-success">จัดส่งแล้ว</span>
-                                    <?php else: ?>
-                                        <span class="badge badge-warning">ยังไม่จัดส่ง</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?php echo htmlspecialchars($row['salesman'] ?: '-'); ?></td>
-                                <td><?php echo htmlspecialchars($row['lname'] ?: '-'); ?></td>
-                                <td class="action-buttons">
-                                    <button class="btn btn-danger btn-sm delete-cssale-btn" 
-                                            data-docno="<?php echo htmlspecialchars($row['docno']); ?>" 
-                                            data-custname="<?php echo htmlspecialchars($row['custname']); ?>">
-                                        <i class="fas fa-trash"></i> ลบ
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <tr><td colspan="8" class="text-center">ไม่พบข้อมูล CSSale ที่ไม่ได้ใช้ในช่วงวันที่ที่เลือก</td></tr>
-                    <?php endif; ?>
+                    <tr><td colspan="8" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>
                 </tbody>
             </table>
+        </div>
+
+        <div class="d-flex justify-content-center mt-3">
+            <nav id="paginationContainer"></nav>
         </div>
     </div>
 
@@ -162,18 +163,140 @@ $result = $stmt->get_result();
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        let currentPage = 1;
+        const defaultStart = <?php echo json_encode(date('Y-m-d', strtotime('-2 months'))); ?>;
+        const defaultEnd = <?php echo json_encode(date('Y-m-d')); ?>;
+
+        function escapeHtml(value) {
+            return $('<div>').text(value || '').html();
+        }
+
+        function escapeAttr(value) {
+            return String(value || '').replace(/"/g, '&quot;');
+        }
+
+        function fetchData(page = 1) {
+            currentPage = page;
+            $('#cssale-table-body').html('<tr><td colspan="8" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>');
+
+            $.ajax({
+                url: 'manage_cssale.php',
+                type: 'GET',
+                dataType: 'json',
+                data: {
+                    page: page,
+                    filter_start: $('#filter_start').val(),
+                    filter_end: $('#filter_end').val()
+                },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(response) {
+                    if (response.status !== 'success') {
+                        $('#cssale-table-body').html('<tr><td colspan="8" class="text-center text-danger py-4">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>');
+                        return;
+                    }
+
+                    renderTable(response.rows || []);
+                    renderPagination(response.total_pages || 0, response.current_page || 1);
+                    $('#items-count-info').text(`(${response.total_items} รายการ)`);
+                    $('#deleteAllBtn').toggle((response.total_items || 0) > 0).text(`ลบทั้งหมด (${response.total_items} รายการ)`);
+                },
+                error: function() {
+                    $('#cssale-table-body').html('<tr><td colspan="8" class="text-center text-danger py-4">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>');
+                }
+            });
+        }
+
+        function renderTable(rows) {
+            const tbody = $('#cssale-table-body');
+            tbody.empty();
+
+            if (!rows.length) {
+                tbody.html('<tr><td colspan="8" class="text-center py-4">ไม่พบข้อมูล CSSale ที่ไม่ได้ใช้ในช่วงวันที่ที่เลือก</td></tr>');
+                return;
+            }
+
+            rows.forEach(function(row) {
+                tbody.append(`
+                    <tr id="cssale-row-${row.docno}">
+                        <td>${escapeHtml(row.docno || '-')}</td>
+                        <td>${escapeHtml(row.docdate_formatted || '-')}</td>
+                        <td>${escapeHtml(row.custname || '-')}</td>
+                        <td>${escapeHtml(row.shipaddr || '-')}</td>
+                        <td>${row.shipflag == 1 ? '<span class="badge badge-success">จัดส่งแล้ว</span>' : '<span class="badge badge-warning">ยังไม่ได้จัดส่ง</span>'}</td>
+                        <td>${escapeHtml(row.salesman || '-')}</td>
+                        <td>${escapeHtml(row.lname || '-')}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-danger btn-sm delete-cssale-btn" data-docno="${escapeAttr(row.docno || '')}" data-custname="${escapeAttr(row.custname || '')}">
+                                <i class="fas fa-trash"></i> ลบ
+                            </button>
+                        </td>
+                    </tr>
+                `);
+            });
+        }
+
+        function renderPagination(totalPages, activePage) {
+            const container = $('#paginationContainer');
+            if (totalPages <= 1) {
+                container.html('');
+                return;
+            }
+
+            let html = '<ul class="pagination">';
+            html += `<li class="page-item ${activePage <= 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${activePage - 1}">ก่อนหน้า</a></li>`;
+            const startPage = Math.max(1, activePage - 2);
+            const endPage = Math.min(totalPages, activePage + 2);
+
+            if (startPage > 1) {
+                html += '<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>';
+                if (startPage > 2) html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+            }
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<li class="page-item ${i === activePage ? 'active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+            }
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                html += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+            }
+            html += `<li class="page-item ${activePage >= totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${activePage + 1}">ถัดไป</a></li>`;
+            html += '</ul>';
+            container.html(html);
+        }
+
         $(document).ready(function() {
-            // Delete single CSSale record
+            fetchData(1);
+
+            $('#filterForm').on('submit', function(e) {
+                e.preventDefault();
+                fetchData(1);
+            });
+
+            $('#resetBtn').on('click', function() {
+                $('#filter_start').val(defaultStart);
+                $('#filter_end').val(defaultEnd);
+                fetchData(1);
+            });
+
+            $('#refreshBtn').on('click', function() {
+                fetchData(currentPage);
+            });
+
+            $('#paginationContainer').on('click', 'a.page-link', function(e) {
+                e.preventDefault();
+                const page = Number($(this).data('page'));
+                if (page) fetchData(page);
+            });
+
             $('#cssale-table-body').on('click', '.delete-cssale-btn', function() {
                 const docno = $(this).data('docno');
                 const custname = $(this).data('custname');
-                
+
                 Swal.fire({
                     title: 'ยืนยันการลบข้อมูล',
                     html: `คุณต้องการลบข้อมูล CSSale นี้ใช่หรือไม่?<br><br>
                            <strong>เลขที่บิล:</strong> ${docno}<br>
                            <strong>ชื่อลูกค้า:</strong> ${custname}<br><br>
-                           <span class="text-danger">⚠️ การกระทำนี้ไม่สามารถย้อนกลับได้!</span>`,
+                           <span class="text-danger">การกระทำนี้ไม่สามารถย้อนกลับได้!</span>`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
@@ -181,21 +304,36 @@ $result = $stmt->get_result();
                     confirmButtonText: 'ใช่, ลบเลย!',
                     cancelButtonText: 'ไม่'
                 }).then((result) => {
-                    if (result.isConfirmed) {
-                        deleteSingleCSSale(docno);
-                    }
+                    if (!result.isConfirmed) return;
+
+                    Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    $.ajax({
+                        url: '<?php echo BASE_URL; ?>php/delete_cssale.php',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: { docno: docno },
+                        success: function(response) {
+                            Swal.close();
+                            if (response.status === 'success') {
+                                Swal.fire({ icon: 'success', title: 'ลบข้อมูลสำเร็จ!', text: response.message, timer: 2000, showConfirmButton: false })
+                                    .then(() => fetchData(currentPage));
+                            } else {
+                                Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด!', text: response.message });
+                            }
+                        },
+                        error: function() {
+                            Swal.close();
+                            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ', text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้' });
+                        }
+                    });
                 });
             });
-            
-            // Delete all CSSale records
-            $('#deleteAllBtn').click(function() {
-                const totalCount = $(this).data('count') || $('#cssale-table-body tr').length;
-                
+
+            $('#deleteAllBtn').on('click', function() {
                 Swal.fire({
                     title: 'ยืนยันการลบข้อมูลทั้งหมด',
-                    html: `คุณต้องการลบข้อมูล CSSale ทั้งหมด <strong>${totalCount} รายการ</strong> ใช่หรือไม่?<br><br>
-                           <span class="text-danger">⚠️ การกระทำนี้จะลบข้อมูลทั้งหมดในช่วงวันที่ที่เลือกและไม่สามารถย้อนกลับได้!</span><br>
-                           <span class="text-warning">📋 ข้อมูลที่มีออเดอร์ที่เกี่ยวข้องจะไม่ถูกลบ</span>`,
+                    html: `คุณต้องการลบข้อมูล CSSale ทั้งหมดในช่วงวันที่ที่เลือกใช่หรือไม่?<br><br>
+                           <span class="text-danger">การกระทำนี้จะลบเฉพาะข้อมูลที่ยังไม่มีใน Orders และไม่สามารถย้อนกลับได้!</span>`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
@@ -204,136 +342,45 @@ $result = $stmt->get_result();
                     cancelButtonText: 'ไม่',
                     reverseButtons: true
                 }).then((result) => {
-                    if (result.isConfirmed) {
-                        deleteAllCSSale();
-                    }
+                    if (!result.isConfirmed) return;
+
+                    Swal.fire({
+                        title: 'กำลังลบข้อมูลทั้งหมด...',
+                        html: 'กรุณารอสักครู่ กำลังลบข้อมูล CSSale ทั้งหมด...',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    $.ajax({
+                        url: '<?php echo BASE_URL; ?>php/delete_all_cssale.php',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            filter_start: $('#filter_start').val(),
+                            filter_end: $('#filter_end').val()
+                        },
+                        success: function(response) {
+                            Swal.close();
+                            if (response.status === 'success') {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'ลบข้อมูลทั้งหมดสำเร็จ!',
+                                    html: `ลบข้อมูล CSSale ทั้งหมด <strong>${response.deleted_count}</strong> รายการเรียบร้อยแล้ว`,
+                                    timer: 3000,
+                                    showConfirmButton: false
+                                }).then(() => fetchData(1));
+                            } else {
+                                Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด!', text: response.message });
+                            }
+                        },
+                        error: function() {
+                            Swal.close();
+                            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ', text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้' });
+                        }
+                    });
                 });
             });
-            
-            // Function to delete single CSSale
-            function deleteSingleCSSale(docno) {
-                Swal.fire({
-                    title: 'กำลังลบข้อมูล...',
-                    allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading()
-                });
-                
-                $.ajax({
-                    url: '<?php echo BASE_URL; ?>php/delete_cssale.php',
-                    type: 'POST',
-                    data: {
-                        docno: docno
-                    },
-                    dataType: 'json',
-                    success: function(response) {
-                        Swal.close();
-                        if (response.status === 'success') {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'ลบข้อมูลสำเร็จ!',
-                                text: response.message,
-                                timer: 2000,
-                                showConfirmButton: false
-                            }).then(() => {
-                                // Remove row from table
-                                $('#cssale-row-' + docno).fadeOut(500, function() {
-                                    $(this).remove();
-                                    updateCountDisplay();
-                                });
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'เกิดข้อผิดพลาด!',
-                                text: response.message
-                            });
-                        }
-                    },
-                    error: function() {
-                        Swal.close();
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
-                            text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
-                        });
-                    }
-                });
-            }
-            
-            // Function to delete all CSSale
-            function deleteAllCSSale() {
-                Swal.fire({
-                    title: 'กำลังลบข้อมูลทั้งหมด...',
-                    html: 'กรุณารอสักครู่ กำลังลบข้อมูล CSSale ทั้งหมด...',
-                    allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading()
-                });
-                
-                $.ajax({
-                    url: '<?php echo BASE_URL; ?>php/delete_all_cssale.php',
-                    type: 'POST',
-                    data: {
-                        filter_start: '<?php echo $filter_start; ?>',
-                        filter_end: '<?php echo $filter_end; ?>'
-                    },
-                    dataType: 'json',
-                    success: function(response) {
-                        Swal.close();
-                        if (response.status === 'success') {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'ลบข้อมูลทั้งหมดสำเร็จ!',
-                                html: `ลบข้อมูล CSSale ทั้งหมด <strong>${response.deleted_count}</strong> รายการเรียบร้อยแล้ว`,
-                                timer: 3000,
-                                showConfirmButton: false
-                            }).then(() => {
-                                // Reload page to show updated data
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'เกิดข้อผิดพลาด!',
-                                text: response.message
-                            });
-                        }
-                    },
-                    error: function() {
-                        Swal.close();
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
-                            text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
-                        });
-                    }
-                });
-            }
-            
-            // Function to update count display
-            function updateCountDisplay() {
-                const currentCount = $('#cssale-table-body tr').length;
-                $('.alert-info div').html(
-                    '<i class="fas fa-info-circle"></i> ' +
-                    '<strong>ข้อมูลนี้แสดงเฉพาะรายการจากตาราง CSSale ที่ยังไม่มีในตาราง Orders</strong> ' +
-                    `(${currentCount} รายการ)`
-                );
-                
-                // Update or hide delete all button
-                if (currentCount === 0) {
-                    $('#deleteAllBtn').hide();
-                    $('#cssale-table-body').html(
-                        '<tr><td colspan="8" class="text-center">ไม่พบข้อมูล CSSale ที่ไม่ได้ใช้ในช่วงวันที่ที่เลือก</td></tr>'
-                    );
-                } else {
-                    $('#deleteAllBtn').show().text(`ลบทั้งหมด (${currentCount} รายการ)`);
-                }
-            }
         });
     </script>
 </body>
 </html>
-
-<?php
-$stmt->close();
-$conn->close();
-?>

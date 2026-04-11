@@ -16,9 +16,11 @@ $cssale_options = "";
 $origin_options = "";
 $transport_origin_options = "";
 $salesman_modal_options = "";
+$cssale_cursor_docdate = '';
+$cssale_cursor_docno = '';
 
 // โหลดแค่ 50 รายการแรกเท่านั้น (สำหรับการแสดงผลทันที)
-$sql_cssale_initial = "SELECT cs.docno, cs.custname 
+$sql_cssale_initial = "SELECT cs.docno, cs.custname, cs.docdate
                        FROM cssale cs
                        WHERE cs.shipflag = 1 
                        AND NOT EXISTS (
@@ -37,6 +39,8 @@ $result_cssale = $conn->query($sql_cssale_initial);
 if ($result_cssale && $result_cssale->num_rows > 0) { 
     while($row = $result_cssale->fetch_assoc()) { 
         $cssale_options .= "<option value='" . htmlspecialchars($row['docno']) . "'>" . htmlspecialchars($row['docno'] . ' - ' . $row['custname']) . "</option>"; 
+        $cssale_cursor_docdate = $row['docdate'];
+        $cssale_cursor_docno = $row['docno'];
     } 
 }
 
@@ -353,11 +357,13 @@ $conn->close();
 
             // *** SUPER FAST: Lazy Load สำหรับ CSSale Dropdown ***
             let cssaleLoaded = false;
-            let cssaleOffset = 50; // เริ่มจาก 50 รายการแรก
+            let cssaleCursorDocdate = <?php echo json_encode($cssale_cursor_docdate); ?>;
+            let cssaleCursorDocno = <?php echo json_encode($cssale_cursor_docno); ?>;
+            let cssaleHasMore = <?php echo json_encode(!empty($cssale_cursor_docno)); ?>;
 
             // ลองหลายวิธีเพื่อให้มั่นใจว่าจะโหลด
             function triggerLoadMoreCSSale() {
-                if (!cssaleLoaded) {
+                if (!cssaleLoaded && cssaleHasMore) {
                     console.log('Loading more CSSale options...');
                     loadMoreCSSaleOptions();
                     cssaleLoaded = true;
@@ -387,7 +393,10 @@ $conn->close();
                 $.ajax({
                     url: getBaseUrl() + 'php/load_more_cssale.php',
                     type: 'GET',
-                    data: { offset: cssaleOffset },
+                    data: {
+                        last_docdate: cssaleCursorDocdate,
+                        last_docno: cssaleCursorDocno
+                    },
                     dataType: 'json',
                     timeout: 8000, // 8 วินาที
                     success: function(response) {
@@ -410,8 +419,10 @@ $conn->close();
                                 $select.select2('open');
                             }, 100);
                             
-                            cssaleOffset += response.options.length;
-                            console.log('Added', response.options.length, 'options. New offset:', cssaleOffset);
+                            cssaleCursorDocdate = response.next_cursor ? response.next_cursor.docdate : null;
+                            cssaleCursorDocno = response.next_cursor ? response.next_cursor.docno : null;
+                            cssaleHasMore = Boolean(response.has_more);
+                            console.log('Added', response.options.length, 'options. Has more:', cssaleHasMore);
                         }
                         $('#cssaleLoadingMore').hide();
                     },

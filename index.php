@@ -14,7 +14,7 @@ if (is_logged_in() && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned
 }
 $dashboard_sql_where = "";
 if (!empty($dashboard_where_clauses)) { $dashboard_sql_where = " WHERE " . implode(" AND ", $dashboard_where_clauses); }
-$sql_counts = "SELECT SUM(CASE WHEN status = 'รอรับเรื่อง' THEN 1 ELSE 0 END) AS count_pending_ack, SUM(CASE WHEN status = 'รับเรื่อง' THEN 1 ELSE 0 END) AS count_pending_assign, SUM(CASE WHEN status = 'รอส่งของ' THEN 1 ELSE 0 END) AS count_pending_delivery, SUM(CASE WHEN status = 'ส่งของแล้ว' AND DATE(updated_at) = CURDATE() THEN 1 ELSE 0 END) AS count_delivered_today FROM orders" . $dashboard_sql_where;
+$sql_counts = "SELECT SUM(CASE WHEN status = 'รอรับเรื่อง' THEN 1 ELSE 0 END) AS count_pending_ack, SUM(CASE WHEN status = 'รับเรื่อง' THEN 1 ELSE 0 END) AS count_pending_assign, SUM(CASE WHEN status = 'รอส่งของ' THEN 1 ELSE 0 END) AS count_pending_delivery, SUM(CASE WHEN status = 'ส่งของแล้ว' AND updated_at >= CURDATE() AND updated_at < CURDATE() + INTERVAL 1 DAY THEN 1 ELSE 0 END) AS count_delivered_today FROM orders" . $dashboard_sql_where;
 $stmt_counts = $conn->prepare($sql_counts);
 if (!empty($dashboard_params)) { $stmt_counts->bind_param($dashboard_param_types, ...$dashboard_params); }
 $stmt_counts->execute(); $result_counts = $stmt_counts->get_result();

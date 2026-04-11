@@ -20,11 +20,14 @@ try {
     $conn->begin_transaction();
     
     // First, get all CSSale records that will be deleted (for logging and count)
-    $get_records_sql = "SELECT cs.docno, cs.custname 
-                      FROM cssale cs 
-                      LEFT JOIN orders o ON cs.docno = o.cssale_docno 
-                      WHERE cs.docdate >= ? AND cs.docdate <= ? 
-                      AND o.cssale_docno IS NULL";
+    $get_records_sql = "SELECT cs.docno, cs.custname
+                      FROM cssale cs
+                      WHERE cs.docdate >= ? AND cs.docdate <= ?
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM orders o
+                          WHERE o.cssale_docno = cs.docno
+                      )";
     
     $get_stmt = $conn->prepare($get_records_sql);
     $get_stmt->bind_param('ss', $filter_start, $filter_end);
@@ -41,10 +44,13 @@ try {
     }
     
     // Delete all CSSale records that don't have related orders
-    $delete_sql = "DELETE cs FROM cssale cs 
-                  LEFT JOIN orders o ON cs.docno = o.cssale_docno 
-                  WHERE cs.docdate >= ? AND cs.docdate <= ? 
-                  AND o.cssale_docno IS NULL";
+    $delete_sql = "DELETE FROM cssale
+                  WHERE docdate >= ? AND docdate <= ?
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM orders o
+                      WHERE o.cssale_docno = cssale.docno
+                  )";
     
     $delete_stmt = $conn->prepare($delete_sql);
     $delete_stmt->bind_param('ss', $filter_start, $filter_end);
