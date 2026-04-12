@@ -91,15 +91,18 @@ if ($is_ajax_request) {
 }
 
 $staff_options = '';
-$result_staff = $conn->query("SELECT staff_id, staff_name FROM staff ORDER BY staff_id");
+$result_staff = $conn->query("SELECT staff_id, staff_name, default_vehicle_id FROM staff WHERE active = 1 ORDER BY staff_name");
 if ($result_staff) {
     while ($row = $result_staff->fetch_assoc()) {
-        $staff_options .= "<option value='" . htmlspecialchars($row['staff_id']) . "'>" . htmlspecialchars($row['staff_name']) . "</option>";
+        $default_vehicle_attr = $row['default_vehicle_id'] !== null
+            ? " data-default-vehicle='" . htmlspecialchars($row['default_vehicle_id']) . "'"
+            : '';
+        $staff_options .= "<option value='" . htmlspecialchars($row['staff_id']) . "'" . $default_vehicle_attr . ">" . htmlspecialchars($row['staff_name']) . "</option>";
     }
 }
 
 $vehicle_options = '';
-$result_vehicles = $conn->query("SELECT vehicle_id, CONCAT(vehicle_name, ' (', vehicle_plate, ')') AS vehicle_display FROM vehicles ORDER BY vehicle_id");
+$result_vehicles = $conn->query("SELECT vehicle_id, CONCAT(vehicle_name, ' (', vehicle_plate, ')') AS vehicle_display FROM vehicles WHERE active = 1 ORDER BY vehicle_name, vehicle_plate");
 if ($result_vehicles) {
     while ($row = $result_vehicles->fetch_assoc()) {
         $vehicle_options .= "<option value='" . htmlspecialchars($row['vehicle_id']) . "'>" . htmlspecialchars($row['vehicle_display']) . "</option>";
@@ -220,6 +223,7 @@ $conn->close();
                                     <option value="">-- เลือกรถ --</option>
                                     <?php echo $vehicle_options; ?>
                                 </select>
+                                <small class="form-text text-muted" id="defaultVehicleHint">เมื่อเลือกพนักงาน ระบบจะเลือกคันประจำให้อัตโนมัติถ้ามีการกำหนดไว้</small>
                             </div>
                         </div>
                     </div>
@@ -246,6 +250,19 @@ $conn->close();
 
         function escapeAttr(value) {
             return String(value || '').replace(/"/g, '&quot;');
+        }
+
+        function applyDefaultVehicleForSelectedStaff() {
+            const selectedStaff = $('#assigned_staff_id').find(':selected');
+            const defaultVehicleId = selectedStaff.data('defaultVehicle');
+
+            if (defaultVehicleId && $('#assigned_vehicle_id option[value="' + defaultVehicleId + '"]').length) {
+                $('#assigned_vehicle_id').val(String(defaultVehicleId)).trigger('change');
+                $('#defaultVehicleHint').text('เลือกรถประจำของพนักงานให้แล้ว แต่ยังเปลี่ยนเป็นคันอื่นได้');
+                return;
+            }
+
+            $('#defaultVehicleHint').text('พนักงานคนนี้ยังไม่ได้กำหนดรถประจำ หรือรถประจำถูกปิดใช้งาน');
         }
 
         function fetchData(page = 1) {
@@ -386,7 +403,18 @@ $conn->close();
                 $('#modal_details').text($(this).data('details') || '-');
                 $('#assigned_staff_id').val(null).trigger('change');
                 $('#assigned_vehicle_id').val(null).trigger('change');
+                $('#defaultVehicleHint').text('เมื่อเลือกพนักงาน ระบบจะเลือกคันประจำให้อัตโนมัติถ้ามีการกำหนดไว้');
                 $('#assignDeliveryModal').modal('show');
+            });
+
+            $('#assigned_staff_id').on('change', function() {
+                if (!$(this).val()) {
+                    $('#assigned_vehicle_id').val(null).trigger('change');
+                    $('#defaultVehicleHint').text('เมื่อเลือกพนักงาน ระบบจะเลือกคันประจำให้อัตโนมัติถ้ามีการกำหนดไว้');
+                    return;
+                }
+
+                applyDefaultVehicleForSelectedStaff();
             });
 
             $('#assignDeliveryForm').on('submit', function(e) {
