@@ -624,7 +624,7 @@ $conn->close();
                 </div>
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
                     <a href="<?php echo BASE_URL; ?>pages/manage_users_roles.php" class="btn btn-outline-dark btn-block">
-                        <i class="fas fa-user-shield"></i>ผู้ใช้/สิทธิ์
+                        <i class="fas fa-user-shield"></i>จัดการผู้ใช้
                     </a>
                 </div>
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2">

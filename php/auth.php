@@ -24,7 +24,6 @@ $sql = "SELECT
             password_hash,
             full_name,
             role_level,
-            role_id,
             assigned_transport_origin_id,
             active
         FROM users
@@ -62,12 +61,11 @@ session_regenerate_id(true);
 $_SESSION['user_id'] = (int) $user['user_id'];
 $_SESSION['username'] = $user['username'];
 $_SESSION['full_name'] = $user['full_name'];
-$_SESSION['role_id'] = !empty($user['role_id']) ? (int) $user['role_id'] : null;
 $_SESSION['role_level'] = (int) $user['role_level'];
 $_SESSION['assigned_transport_origin_id'] = !empty($user['assigned_transport_origin_id'])
     ? (int) $user['assigned_transport_origin_id']
     : null;
-unset($_SESSION['permissions'], $_SESSION['access_denied_msg'], $_SESSION['login_error']);
+unset($_SESSION['access_denied_msg'], $_SESSION['login_error']);
 
 refresh_session_authorization(true);
 
