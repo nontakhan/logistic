@@ -1,6 +1,6 @@
 <?php
 require_once '../php/check_session.php';
-require_login([4]);
+require_permission('staff_vehicles.manage', [4]);
 require_once '../php/db_connect.php';
 
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
@@ -494,47 +494,6 @@ $conn->close();
                     </div>
                 </div>
 
-                <div class="section-card">
-                    <h4><i class="fas fa-map-signs mr-2 text-danger"></i>สรุปรถประจำของพนักงาน</h4>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped w-100" id="bindingSummaryTable">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>พนักงาน</th>
-                                    <th>รถประจำ</th>
-                                    <th>หมายเหตุ</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($staff_rows as $row): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($row['staff_name']); ?></td>
-                                        <td>
-                                            <?php
-                                            if (!empty($row['default_vehicle_id'])) {
-                                                echo htmlspecialchars(trim(($row['vehicle_name'] !== '' ? $row['vehicle_name'] . ' ' : '') . '(' . $row['vehicle_plate'] . ')'));
-                                            } else {
-                                                echo '-';
-                                            }
-                                            ?>
-                                        </td>
-                                        <td>
-                                            <?php
-                                            if (empty($row['default_vehicle_id'])) {
-                                                echo 'ยังไม่กำหนดรถประจำ';
-                                            } elseif (isset($row['vehicle_active']) && (int) $row['vehicle_active'] === 0) {
-                                                echo 'รถคันนี้ถูกปิดใช้งานอยู่';
-                                            } else {
-                                                echo 'พร้อมใช้เป็นค่าเริ่มต้นในหน้าจัดคน/รถ';
-                                            }
-                                            ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -582,12 +541,6 @@ $conn->close();
                 ]
             });
 
-            $('#bindingSummaryTable').DataTable({
-                responsive: true,
-                pageLength: 10,
-                order: [[0, 'asc']],
-                language: thaiLanguage
-            });
         });
     </script>
 </body>
