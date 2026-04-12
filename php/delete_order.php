@@ -5,7 +5,7 @@ header('Content-Type: application/json');
 // ใช้ __DIR__ เพื่อให้ path ถูกต้องเสมอ
 require_once __DIR__ . '/check_session.php';
 // ตรวจสอบสิทธิ์ที่ต้องการ (ระดับ 2 และ Admin)
-require_login([2, 4]); 
+require_permission('orders.delete', [2, 4]); 
 
 require_once __DIR__ . '/db_connect.php';
 

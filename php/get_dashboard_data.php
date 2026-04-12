@@ -7,7 +7,7 @@ require_once __DIR__ . '/check_session.php';
 require_once __DIR__ . '/db_connect.php';
 
 // ต้อง login ก่อนถึงจะดึงข้อมูลได้
-if (!is_logged_in()) {
+if (!is_logged_in() || !has_permission('dashboard.view', [1, 2, 3, 4])) {
     echo json_encode(['status' => 'error', 'message' => 'Authentication required']);
     exit;
 }
@@ -16,9 +16,9 @@ if (!is_logged_in()) {
 $dashboard_where_clauses = [];
 $dashboard_params = [];
 $dashboard_param_types = "";
-if ($_SESSION['role_level'] != 4 && !empty($_SESSION['assigned_transport_origin_id'])) {
+if (should_limit_to_assigned_origin()) {
     $dashboard_where_clauses[] = "transport_origin_id = ?";
-    $dashboard_params[] = $_SESSION['assigned_transport_origin_id'];
+    $dashboard_params[] = current_assigned_transport_origin_id();
     $dashboard_param_types .= "i";
 }
 $dashboard_sql_where = "";

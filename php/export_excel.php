@@ -3,7 +3,7 @@
 
 // 1. Includes and Session Check
 require_once __DIR__ . '/check_session.php';
-require_login([1, 2, 3, 4]); // อนุญาตให้ทุกสิทธิ์ที่ login แล้วสามารถ export ได้
+require_permission('export.orders', [1, 2, 3, 4]); // อนุญาตให้ทุกสิทธิ์ที่ login แล้วสามารถ export ได้
 require_once __DIR__ . '/db_connect.php';
 
 // 2. Get filter parameters from GET request
@@ -20,9 +20,9 @@ $where_clauses = [];
 $params = []; 
 $param_types = ""; 
 
-if (is_logged_in() && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned_transport_origin_id'])) {
+if (should_limit_to_assigned_origin()) {
     $where_clauses[] = "o.transport_origin_id = ?";
-    $params[] = $_SESSION['assigned_transport_origin_id'];
+    $params[] = current_assigned_transport_origin_id();
     $param_types .= "i";
 }
 

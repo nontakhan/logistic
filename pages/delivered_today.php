@@ -1,6 +1,6 @@
 <?php
 require_once '../php/check_session.php';
-require_login([2, 3, 4]);
+require_permission('orders.confirm_delivery', [2, 3, 4]);
 require_once '../php/db_connect.php';
 
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";

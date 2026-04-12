@@ -2,7 +2,7 @@
 // pages/price_checker.php
 require_once '../php/check_session.php';
 // สิทธิ์ที่ต้องการสำหรับหน้านี้: ทุกคนที่ login แล้วสามารถใช้ได้
-require_login([1, 2, 3, 4]);
+require_permission('pricing.view', [1, 2, 3, 4]);
 
 require_once '../php/db_connect.php'; 
 

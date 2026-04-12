@@ -342,62 +342,126 @@ $conn->close();
         }
 
         /* Quick Actions */
-        .quick-actions .btn {
-            margin-bottom: 1rem;
-            padding: 1rem 1.5rem;
-            font-size: 1rem;
-            font-weight: 500;
-            border-radius: var(--border-radius);
-            transition: var(--transition);
-            border: none;
-            position: relative;
-            overflow: hidden;
+        .quick-actions-shell {
+            display: grid;
+            gap: 1.5rem;
         }
 
-        .quick-actions .btn:hover {
-            transform: translateY(-2px);
+        .quick-action-group {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            border-radius: var(--border-radius-lg);
             box-shadow: var(--shadow-lg);
+            padding: 1.35rem;
         }
 
-        .quick-actions .btn i {
-            margin-right: 0.5rem;
+        .quick-action-group-title {
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+            margin-bottom: 1rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-dark);
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-red-light) 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: linear-gradient(135deg, var(--primary-red-dark) 0%, var(--primary-red) 100%);
-            color: white;
-        }
-
-        .btn-outline-danger {
-            border: 2px solid var(--primary-red);
+        .quick-action-group-title i {
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(231, 76, 60, 0.12);
             color: var(--primary-red);
-            background: transparent;
         }
 
-        .btn-outline-danger:hover {
-            background: var(--primary-red);
-            color: white;
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 1rem;
         }
 
-        .btn-info {
-            background: linear-gradient(135deg, var(--accent-blue) 0%, #6366f1 100%);
+        .quick-action-card {
+            min-height: 112px;
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+            padding: 1rem 1.05rem;
+            border-radius: 18px;
+            text-decoration: none !important;
+            color: #fff !important;
+            box-shadow: 0 14px 24px rgba(15, 23, 42, 0.10);
+            transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
         }
 
-        .btn-warning {
-            background: linear-gradient(135deg, var(--warning-yellow) 0%, #fbbf24 100%);
+        .quick-action-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 30px rgba(15, 23, 42, 0.16);
+            filter: saturate(1.03);
         }
 
-        .btn-success {
-            background: linear-gradient(135deg, var(--success-green) 0%, #34d399 100%);
+        .quick-action-icon {
+            width: 46px;
+            height: 46px;
+            flex: 0 0 46px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.18);
+            font-size: 1.1rem;
         }
 
-        .btn-secondary {
-            background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+        .quick-action-copy {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .quick-action-label {
+            font-size: 1rem;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .quick-action-meta {
+            margin-top: .2rem;
+            font-size: .82rem;
+            line-height: 1.35;
+            color: rgba(255, 255, 255, 0.84);
+        }
+
+        .quick-action-card.action-red { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .quick-action-card.action-orange { background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%); }
+        .quick-action-card.action-blue { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .quick-action-card.action-cyan { background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%); }
+        .quick-action-card.action-green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .quick-action-card.action-slate { background: linear-gradient(135deg, #64748b 0%, #475569 100%); }
+        .quick-action-card.action-purple { background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); }
+        .quick-action-card.action-dark { background: linear-gradient(135deg, #334155 0%, #0f172a 100%); }
+
+        @media (max-width: 1199.98px) {
+            .quick-actions-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .quick-actions-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .quick-action-card {
+                min-height: 100px;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .quick-actions-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Charts */
@@ -578,69 +642,119 @@ $conn->close();
                 <i class="fas fa-bolt mr-2"></i>
                 เมนูลัด
             </h3>
-            <div class="row quick-actions">
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
-                    <a href="<?php echo BASE_URL; ?>pages/price_checker.php" class="btn btn-outline-danger btn-block">
-                        <i class="fas fa-search-dollar"></i>เช็คราคา
-                    </a>
+            <div class="quick-actions-shell">
+                <div class="quick-action-group">
+                    <div class="quick-action-group-title">
+                        <i class="fas fa-compass"></i>
+                        เมนูทั่วไป
+                    </div>
+                    <div class="quick-actions-grid">
+                        <?php if (has_permission('orders.create', [1, 2, 4])): ?>
+                        <a href="<?php echo BASE_URL; ?>pages/add_order_form.php" class="quick-action-card action-red">
+                            <span class="quick-action-icon"><i class="fas fa-plus-circle"></i></span>
+                            <span class="quick-action-copy">
+                                <span class="quick-action-label">เพิ่มรายการ</span>
+                                <span class="quick-action-meta">สร้างงานจัดส่งจากบิล</span>
+                            </span>
+                        </a>
+                        <?php endif; ?>
+
+                        <a href="<?php echo BASE_URL; ?>pages/all_orders.php" class="quick-action-card action-slate">
+                            <span class="quick-action-icon"><i class="fas fa-list-alt"></i></span>
+                            <span class="quick-action-copy">
+                                <span class="quick-action-label">รายการทั้งหมด</span>
+                                <span class="quick-action-meta">ค้นหาและติดตามสถานะ</span>
+                            </span>
+                        </a>
+
+                        <a href="<?php echo BASE_URL; ?>pages/price_checker.php" class="quick-action-card action-orange">
+                            <span class="quick-action-icon"><i class="fas fa-search-dollar"></i></span>
+                            <span class="quick-action-copy">
+                                <span class="quick-action-label">เช็คราคา</span>
+                                <span class="quick-action-meta">ตรวจสอบราคาและระยะทาง</span>
+                            </span>
+                        </a>
+
+                        <?php if (has_permission('admin.access', [4])): ?>
+                        <a href="<?php echo BASE_URL; ?>pages/analytics_dashboard.php" class="quick-action-card action-blue">
+                            <span class="quick-action-icon"><i class="fas fa-chart-line"></i></span>
+                            <span class="quick-action-copy">
+                                <span class="quick-action-label">Analytics</span>
+                                <span class="quick-action-meta">ดูภาพรวมและรายงานเชิงลึก</span>
+                            </span>
+                        </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
-                <?php if (has_permission('orders.create', [1, 2, 4])): ?>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
-                    <a href="<?php echo BASE_URL; ?>pages/add_order_form.php" class="btn btn-primary btn-block">
-                        <i class="fas fa-plus-circle"></i>เพิ่มรายการ
-                    </a>
-                </div>
-                <?php endif; ?>
-                
+
                 <?php if (has_permission('orders.acknowledge', [2, 3, 4])): ?>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
-                    <a href="<?php echo BASE_URL; ?>pages/pending_acknowledgement.php" class="btn btn-info btn-block">
-                        <i class="fas fa-inbox"></i>รอรับเรื่อง
-                    </a>
-                </div>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
-                    <a href="<?php echo BASE_URL; ?>pages/pending_assignment.php" class="btn btn-warning btn-block">
-                        <i class="fas fa-user-cog"></i>รอจัดคน/รถ
-                    </a>
-                </div>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
-                    <a href="<?php echo BASE_URL; ?>pages/pending_delivery.php" class="btn btn-success btn-block">
-                        <i class="fas fa-truck-loading"></i>รอส่งของ
-                    </a>
+                <div class="quick-action-group">
+                    <div class="quick-action-group-title">
+                        <i class="fas fa-shipping-fast"></i>
+                        งานปฏิบัติการขนส่ง
+                    </div>
+                    <div class="quick-actions-grid">
+                        <a href="<?php echo BASE_URL; ?>pages/pending_acknowledgement.php" class="quick-action-card action-cyan">
+                            <span class="quick-action-icon"><i class="fas fa-inbox"></i></span>
+                            <span class="quick-action-copy">
+                                <span class="quick-action-label">รอรับเรื่อง</span>
+                                <span class="quick-action-meta">ตรวจงานใหม่ที่ต้องรับเข้า</span>
+                            </span>
+                        </a>
+                        <a href="<?php echo BASE_URL; ?>pages/pending_assignment.php" class="quick-action-card action-orange">
+                            <span class="quick-action-icon"><i class="fas fa-user-cog"></i></span>
+                            <span class="quick-action-copy">
+                                <span class="quick-action-label">รอจัดคน/รถ</span>
+                                <span class="quick-action-meta">จัดพนักงานและรถสำหรับส่ง</span>
+                            </span>
+                        </a>
+                        <a href="<?php echo BASE_URL; ?>pages/pending_delivery.php" class="quick-action-card action-green">
+                            <span class="quick-action-icon"><i class="fas fa-truck-loading"></i></span>
+                            <span class="quick-action-copy">
+                                <span class="quick-action-label">รอส่งของ</span>
+                                <span class="quick-action-meta">ยืนยันการส่งและติดตามหน้างาน</span>
+                            </span>
+                        </a>
+                    </div>
                 </div>
                 <?php endif; ?>
-                
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
-                    <a href="<?php echo BASE_URL; ?>pages/all_orders.php" class="btn btn-secondary btn-block">
-                        <i class="fas fa-list-alt"></i>รายการ
-                    </a>
-                </div>
-                
+
                 <?php if (has_permission('admin.access', [4])): ?>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
-                    <a href="<?php echo BASE_URL; ?>pages/analytics_dashboard.php" class="btn btn-outline-primary btn-block">
-                        <i class="fas fa-chart-line"></i>Analytics
-                    </a>
-                </div>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
-                    <a href="<?php echo BASE_URL; ?>pages/manage_users_roles.php" class="btn btn-outline-dark btn-block">
-                        <i class="fas fa-user-shield"></i>จัดการผู้ใช้
-                    </a>
-                </div>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
-                    <a href="<?php echo BASE_URL; ?>pages/manage_cssale.php" class="btn btn-outline-warning btn-block">
-                        <i class="fas fa-trash-alt"></i>จัดการ CSSale
-                    </a>
-                </div>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
-                    <a href="<?php echo BASE_URL; ?>pages/manage_staff_vehicles.php" class="btn btn-outline-danger btn-block">
-                        <i class="fas fa-id-card-alt"></i>พนักงาน/รถ
-                    </a>
-                </div>
-                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
-                    <a href="<?php echo BASE_URL; ?>pages/manage_sales_staff.php" class="btn btn-outline-info btn-block">
-                        <i class="fas fa-user-tie"></i>พนักงานขาย
-                    </a>
+                <div class="quick-action-group">
+                    <div class="quick-action-group-title">
+                        <i class="fas fa-tools"></i>
+                        จัดการหลังบ้าน
+                    </div>
+                    <div class="quick-actions-grid">
+                        <a href="<?php echo BASE_URL; ?>pages/manage_users_roles.php" class="quick-action-card action-dark">
+                            <span class="quick-action-icon"><i class="fas fa-user-shield"></i></span>
+                            <span class="quick-action-copy">
+                                <span class="quick-action-label">จัดการผู้ใช้</span>
+                                <span class="quick-action-meta">เพิ่ม แก้ไข และดูสิทธิ์ผู้ใช้</span>
+                            </span>
+                        </a>
+                        <a href="<?php echo BASE_URL; ?>pages/manage_cssale.php" class="quick-action-card action-orange">
+                            <span class="quick-action-icon"><i class="fas fa-trash-alt"></i></span>
+                            <span class="quick-action-copy">
+                                <span class="quick-action-label">จัดการ CSSale</span>
+                                <span class="quick-action-meta">ดูแลข้อมูลบิลต้นทาง</span>
+                            </span>
+                        </a>
+                        <a href="<?php echo BASE_URL; ?>pages/manage_staff_vehicles.php" class="quick-action-card action-red">
+                            <span class="quick-action-icon"><i class="fas fa-id-card-alt"></i></span>
+                            <span class="quick-action-copy">
+                                <span class="quick-action-label">พนักงาน/รถ</span>
+                                <span class="quick-action-meta">จัดการคนขับ รถ และรถประจำ</span>
+                            </span>
+                        </a>
+                        <a href="<?php echo BASE_URL; ?>pages/manage_sales_staff.php" class="quick-action-card action-purple">
+                            <span class="quick-action-icon"><i class="fas fa-user-tie"></i></span>
+                            <span class="quick-action-copy">
+                                <span class="quick-action-label">พนักงานขาย</span>
+                                <span class="quick-action-meta">จัดการข้อมูลพนักงานขาย</span>
+                            </span>
+                        </a>
+                    </div>
                 </div>
                 <?php endif; ?>
             </div>

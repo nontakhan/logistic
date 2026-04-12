@@ -1,6 +1,6 @@
 <?php
 require_once '../php/check_session.php';
-require_login([4]);
+require_permission('cssale.manage', [4]);
 require_once '../php/db_connect.php';
 
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";

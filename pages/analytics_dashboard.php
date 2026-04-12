@@ -1,7 +1,7 @@
 <?php
 // pages/analytics_dashboard.php
 require_once '../php/check_session.php';
-require_login([1, 2, 3, 4]);
+require_permission('analytics.view', [1, 2, 3, 4]);
 
 // กำหนด BASE_URL
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
@@ -437,7 +437,7 @@ $default_date_end = date('Y-m-d');
                         <label><i class="fas fa-calendar-alt mr-1"></i>วันที่สิ้นสุด</label>
                         <input type="date" class="form-control" id="date_end" value="<?php echo $default_date_end; ?>">
                     </div>
-                    <?php if (in_array($_SESSION['role_level'], [1, 4])): ?>
+                    <?php if (user_can_filter_all_origins()): ?>
                     <div class="col-lg-3 col-md-6 mb-3">
                         <label><i class="fas fa-building mr-1"></i>สาขา</label>
                         <select class="form-control" id="transport_origin">

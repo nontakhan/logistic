@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/check_session.php';
 require_once __DIR__ . '/db_connect.php';
 
-if (!is_logged_in()) {
+if (!is_logged_in() || !has_permission('analytics.view', [1, 2, 3, 4])) {
     echo json_encode(['status' => 'error', 'message' => 'กรุณาเข้าสู่ระบบ'], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -125,9 +125,9 @@ try {
     $params = [];
     $param_types = '';
 
-    if ($_SESSION['role_level'] != 4 && !empty($_SESSION['assigned_transport_origin_id'])) {
+    if (should_limit_to_assigned_origin()) {
         $where_conditions[] = 'o.transport_origin_id = ?';
-        $params[] = (int) $_SESSION['assigned_transport_origin_id'];
+        $params[] = (int) current_assigned_transport_origin_id();
         $param_types .= 'i';
     }
 
@@ -156,7 +156,7 @@ try {
         $param_types .= 's';
     }
 
-    if (in_array($_SESSION['role_level'], [1, 4], true) && $filter_transport_origin > 0) {
+    if (user_can_filter_all_origins() && $filter_transport_origin > 0) {
         $where_conditions[] = 'o.transport_origin_id = ?';
         $params[] = $filter_transport_origin;
         $param_types .= 'i';

@@ -1,7 +1,7 @@
 <?php
 // php/delete_cssale.php
 require_once 'check_session.php';
-require_login([4]); // Admin only
+require_permission('cssale.manage', [4]); // Admin only
 require_once 'db_connect.php';
 
 header('Content-Type: application/json');
