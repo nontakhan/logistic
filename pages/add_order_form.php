@@ -18,6 +18,7 @@ $transport_origin_options = "";
 $salesman_modal_options = "";
 $cssale_cursor_docdate = '';
 $cssale_cursor_docno = '';
+$default_transport_origin_id = null;
 
 // โหลดแค่ 50 รายการแรกเท่านั้น (สำหรับการแสดงผลทันที)
 $sql_cssale_initial = "SELECT cs.docno, cs.custname, cs.docdate
@@ -56,12 +57,19 @@ if ($result_origin && $result_origin->num_rows > 0) {
     } 
 }
 
-// โหลดข้อมูลทั้งหมด
-$sql_transport = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY origin_name";
+// โหลดเฉพาะต้นทางขนส่งที่เปิดใช้งาน และเลือกค่า default ให้อัตโนมัติ
+$sql_transport = "SELECT transport_origin_id, origin_name, is_default
+                  FROM transport_origins
+                  WHERE active = 1
+                  ORDER BY is_default DESC, origin_name";
 $result_transport = $conn->query($sql_transport);
 if ($result_transport && $result_transport->num_rows > 0) { 
     while($row = $result_transport->fetch_assoc()) { 
-        $transport_origin_options .= "<option value='" . htmlspecialchars($row['transport_origin_id']) . "'>" . htmlspecialchars($row['origin_name']) . "</option>"; 
+        if ((int) $row['is_default'] === 1) {
+            $default_transport_origin_id = (int) $row['transport_origin_id'];
+        }
+        $selected = ((int) $row['is_default'] === 1) ? " selected" : "";
+        $transport_origin_options .= "<option value='" . htmlspecialchars($row['transport_origin_id']) . "'" . $selected . ">" . htmlspecialchars($row['origin_name']) . "</option>"; 
     } 
 }
 
@@ -244,7 +252,7 @@ $conn->close();
                 <div class="form-group col-md-6">
                     <label for="transport_origin_id">ต้นทางขนส่ง:</label>
                     <select class="form-control" id="transport_origin_id" name="transport_origin_id" required>
-                        <option value="">-- เลือกต้นทางขนส่ง --</option>
+                        <option value=""<?php echo $default_transport_origin_id === null ? ' selected' : ''; ?>>-- เลือกต้นทางขนส่ง --</option>
                         <?php echo $transport_origin_options; ?>
                     </select>
                 </div>

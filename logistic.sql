@@ -29748,16 +29748,18 @@ DROP TABLE IF EXISTS `transport_origins`;
 CREATE TABLE `transport_origins`  (
   `transport_origin_id` int(11) NOT NULL AUTO_INCREMENT,
   `origin_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `is_default` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`transport_origin_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of transport_origins
 -- ----------------------------
-INSERT INTO `transport_origins` VALUES (1, 'สาขาสำนักงานใหญ่');
-INSERT INTO `transport_origins` VALUES (2, 'สาขาตลาดเก่า');
-INSERT INTO `transport_origins` VALUES (3, 'สาขา เคหะ หน้ารพ.');
-INSERT INTO `transport_origins` VALUES (4, 'สาขาท่าสาป');
+INSERT INTO `transport_origins` VALUES (1, 'สาขาสำนักงานใหญ่', 1, 1);
+INSERT INTO `transport_origins` VALUES (2, 'สาขาตลาดเก่า', 1, 0);
+INSERT INTO `transport_origins` VALUES (3, 'สาขา เคหะ หน้ารพ.', 1, 0);
+INSERT INTO `transport_origins` VALUES (4, 'สาขาท่าสาป', 1, 0);
 
 -- ----------------------------
 -- Table structure for users
