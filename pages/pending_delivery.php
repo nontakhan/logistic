@@ -1,6 +1,6 @@
 <?php
 require_once '../php/check_session.php';
-require_login([2, 3, 4]);
+require_permission('orders.confirm_delivery', [2, 3, 4]);
 require_once '../php/db_connect.php';
 
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
@@ -22,11 +22,11 @@ if ($is_ajax_request) {
     $params = [];
     $param_types = '';
 
-    if (is_logged_in() && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned_transport_origin_id'])) {
-        $where_clauses[] = 'o.transport_origin_id = ?';
-        $params[] = (int) $_SESSION['assigned_transport_origin_id'];
-        $param_types .= 'i';
-    }
+if (should_limit_to_assigned_origin()) {
+    $where_clauses[] = 'o.transport_origin_id = ?';
+    $params[] = (int) current_assigned_transport_origin_id();
+    $param_types .= 'i';
+}
 
     if ($search_docno !== '') {
         $where_clauses[] = 'o.cssale_docno LIKE ?';
@@ -247,6 +247,26 @@ $conn->close();
         </div>
     </div>
 
+    <div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="detailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detailsModalLabel">รายละเอียดการจัดส่ง</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="modal-content-placeholder" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -315,6 +335,9 @@ $conn->close();
                         <td>${escapeHtml(row.order_date_formatted || '-')}</td>
                         <td>${escapeHtml(row.priority || '-')}</td>
                         <td class="action-buttons">
+                            <button class="btn btn-secondary btn-sm view-details-btn" data-orderid="${row.order_id}">
+                                <i class="fas fa-eye"></i> ดูรายละเอียด
+                            </button>
                             <button class="btn btn-warning btn-sm confirm-delivery-btn" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
                                 <i class="fas fa-truck-loading"></i> ยืนยันการส่ง
                             </button>
@@ -328,7 +351,7 @@ $conn->close();
                                 data-current-vehicle-id="${row.assigned_vehicle_id || ''}">
                                 <i class="fas fa-user-edit"></i> แก้ไขคนขับ
                             </button>
-                            <?php if (has_role([2, 4])): ?>
+                            <?php if (has_permission('orders.cancel', [2, 4])): ?>
                             <button class="btn btn-danger btn-sm cancel-btn" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
                                 <i class="fas fa-times-circle"></i> ยกเลิก
                             </button>
@@ -388,6 +411,81 @@ $conn->close();
                 e.preventDefault();
                 const page = Number($(this).data('page'));
                 if (page) fetchData(page);
+            });
+
+            $('#orders-table-body').on('click', '.view-details-btn', function() {
+                const orderId = $(this).data('orderid');
+                const modalPlaceholder = $('#modal-content-placeholder');
+
+                modalPlaceholder.html('<div class="text-center p-4"><div class="spinner-border text-primary" role="status"></div></div>');
+                $('#detailsModal').modal('show');
+
+                $.ajax({
+                    url: '<?php echo BASE_URL; ?>php/get_order_details.php',
+                    type: 'GET',
+                    data: { id: orderId },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            const d = response.data;
+                            let staffInfo = escapeHtml(d.assigned_staff || '-');
+                            if (d.assigned_staff_phone) {
+                                staffInfo += ` (${escapeHtml(d.assigned_staff_phone)})`;
+                            }
+                            let salesmanInfo = d.salesman_code
+                                ? `${escapeHtml(d.salesman_code)} - ${escapeHtml(d.salesman_name || '')}`
+                                : '-';
+                            if (d.salesman_phone) {
+                                salesmanInfo += ` (${escapeHtml(d.salesman_phone)})`;
+                            }
+
+                            const html = `
+                                <div class="container-fluid">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h5 class="text-primary"><i class="fas fa-file-invoice mr-2"></i>ข้อมูลใบสั่งซื้อ</h5>
+                                            <table class="table table-sm table-bordered">
+                                                <tr><th style="width: 35%;">ID ติดตาม</th><td>${escapeHtml(d.order_id)}</td></tr>
+                                                <tr><th>เลขที่บิล</th><td>${escapeHtml(d.cssale_docno || '-')}</td></tr>
+                                                <tr><th>วันที่สั่ง</th><td>${escapeHtml(d.order_date_formatted || '-')}</td></tr>
+                                                <tr><th>สถานะ</th><td><span class="badge ${escapeHtml(d.status_badge || 'badge-light-secondary')} p-2">${escapeHtml(d.status || '-')}</span></td></tr>
+                                                <tr><th>อัปเดตล่าสุด</th><td>${escapeHtml(d.updated_at_formatted || '-')}</td></tr>
+                                            </table>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h5 class="text-primary"><i class="fas fa-user-tie mr-2"></i>ข้อมูลลูกค้า</h5>
+                                            <table class="table table-sm table-bordered">
+                                                <tr><th style="width: 35%;">ชื่อลูกค้า</th><td>${escapeHtml(d.custname || '-')}</td></tr>
+                                                <tr><th>ที่อยู่ (ตามบิล)</th><td>${escapeHtml(d.shipaddr || '-')}</td></tr>
+                                                <tr><th>พนักงานขาย</th><td>${salesmanInfo}</td></tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <h5 class="text-primary"><i class="fas fa-shipping-fast mr-2"></i>ข้อมูลการจัดส่ง</h5>
+                                            <table class="table table-sm table-bordered">
+                                                <tr><th style="width: 25%;">ต้นทางขนส่ง</th><td>${escapeHtml(d.transport_origin || '-')}</td></tr>
+                                                <tr><th>ปลายทาง</th><td>${escapeHtml(d.full_address || '-')}</td></tr>
+                                                <tr><th>คนขับรถ</th><td>${staffInfo}</td></tr>
+                                                <tr><th>รถที่ใช้</th><td>${escapeHtml(d.assigned_vehicle || '-')}</td></tr>
+                                                <tr><th>หมายเหตุ</th><td>${escapeHtml(d.product_details || '-')}</td></tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+
+                            modalPlaceholder.html(html);
+                        } else {
+                            modalPlaceholder.html(`<p class="text-danger">${response.message}</p>`);
+                        }
+                    },
+                    error: function() {
+                        modalPlaceholder.html('<p class="text-danger">เกิดข้อผิดพลาดในการเชื่อมต่อ</p>');
+                    }
+                });
             });
 
             $('#orders-table-body').on('click', '.confirm-delivery-btn', function() {
