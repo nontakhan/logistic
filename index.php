@@ -6,7 +6,7 @@ require_once __DIR__ . '/php/db_connect.php';
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
 $project_folder = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . $project_folder . '/');
-$dashboard_where_clauses = [];$dashboard_params = [];$dashboard_param_types = "";
+$dashboard_where_clauses = array();$dashboard_params = array();$dashboard_param_types = "";
 if (should_limit_to_assigned_origin()) {
     $dashboard_where_clauses[] = "transport_origin_id = ?";
     $dashboard_params[] = current_assigned_transport_origin_id();
@@ -16,7 +16,13 @@ $dashboard_sql_where = "";
 if (!empty($dashboard_where_clauses)) { $dashboard_sql_where = " WHERE " . implode(" AND ", $dashboard_where_clauses); }
 $sql_counts = "SELECT SUM(CASE WHEN status = 'รอรับเรื่อง' THEN 1 ELSE 0 END) AS count_pending_ack, SUM(CASE WHEN status = 'รับเรื่อง' THEN 1 ELSE 0 END) AS count_pending_assign, SUM(CASE WHEN status = 'รอส่งของ' THEN 1 ELSE 0 END) AS count_pending_delivery, SUM(CASE WHEN status = 'ส่งของแล้ว' AND updated_at >= CURDATE() AND updated_at < CURDATE() + INTERVAL 1 DAY THEN 1 ELSE 0 END) AS count_delivered_today FROM orders" . $dashboard_sql_where;
 $stmt_counts = $conn->prepare($sql_counts);
-if (!empty($dashboard_params)) { $stmt_counts->bind_param($dashboard_param_types, ...$dashboard_params); }
+if (!empty($dashboard_params)) {
+    $bind_params = array($dashboard_param_types);
+    foreach ($dashboard_params as $key => $value) {
+        $bind_params[] = &$dashboard_params[$key];
+    }
+    call_user_func_array(array($stmt_counts, 'bind_param'), $bind_params);
+}
 $stmt_counts->execute(); $result_counts = $stmt_counts->get_result();
 $counts = ['pending_ack' => 0, 'pending_assign' => 0, 'pending_delivery' => 0, 'delivered_today' => 0];
 if ($result_counts && $result_counts->num_rows > 0) {
@@ -29,19 +35,32 @@ if ($result_counts && $result_counts->num_rows > 0) {
 $stmt_counts->close();
 $sql_status_distribution = "SELECT status, COUNT(order_id) as count FROM orders" . $dashboard_sql_where . " GROUP BY status";
 $stmt_status = $conn->prepare($sql_status_distribution);
-if (!empty($dashboard_params)) { $stmt_status->bind_param($dashboard_param_types, ...$dashboard_params); }
+if (!empty($dashboard_params)) {
+    $bind_params = array($dashboard_param_types);
+    foreach ($dashboard_params as $key => $value) {
+        $bind_params[] = &$dashboard_params[$key];
+    }
+    call_user_func_array(array($stmt_status, 'bind_param'), $bind_params);
+}
 $stmt_status->execute(); $result_status_distribution = $stmt_status->get_result();
 $status_data_for_chart = [];
-if ($result_status_distribution && $result_status_distribution->num_rows > 0) { while($row = $result_status_distribution->fetch_assoc()){ $status_data_for_chart[] = ['label' => htmlspecialchars($row['status']), 'value' => (int)$row['count']]; } }
+$status_data_for_chart = array();
+if ($result_status_distribution && $result_status_distribution->num_rows > 0) { while($row = $result_status_distribution->fetch_assoc()){ $status_data_for_chart[] = array('label' => htmlspecialchars($row['status']), 'value' => (int)$row['count']); } }
 $status_chart_json = json_encode($status_data_for_chart);
 $stmt_status->close();
-$daily_orders_data = [];
+$daily_orders_data = array();
 $daily_where_clauses = $dashboard_where_clauses; $daily_params = $dashboard_params; $daily_param_types = $dashboard_param_types;
 $daily_where_clauses[] = "order_date >= CURDATE() - INTERVAL 6 DAY AND order_date <= CURDATE()";
 $sql_daily_where = " WHERE " . implode(" AND ", $daily_where_clauses);
 $sql_daily_orders = "SELECT DATE(order_date) as order_day, COUNT(order_id) as count FROM orders" . $sql_daily_where . " GROUP BY DATE(order_date) ORDER BY DATE(order_date) ASC";
 $stmt_daily = $conn->prepare($sql_daily_orders);
-if (!empty($daily_params)) { $stmt_daily->bind_param($daily_param_types, ...$daily_params); }
+if (!empty($daily_params)) {
+    $bind_params = array($daily_param_types);
+    foreach ($daily_params as $key => $value) {
+        $bind_params[] = &$daily_params[$key];
+    }
+    call_user_func_array(array($stmt_daily, 'bind_param'), $bind_params);
+}
 $stmt_daily->execute(); $result_daily_orders = $stmt_daily->get_result();
 $temp_daily_data = [];
 if ($result_daily_orders && $result_daily_orders->num_rows > 0) { while($row = $result_daily_orders->fetch_assoc()){ $temp_daily_data[$row['order_day']] = (int)$row['count']; } }
