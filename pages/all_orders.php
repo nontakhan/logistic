@@ -2,7 +2,7 @@
 // pages/all_orders.php
 require_once __DIR__ . '/../php/check_session.php';
 // สิทธิ์ที่ต้องการสำหรับหน้านี้
-require_login([1, 2, 3, 4]);
+require_permission('orders.view_all', [1, 2, 3, 4]);
 
 require_once __DIR__ . '/../php/db_connect.php';
 
@@ -42,9 +42,9 @@ if ($is_ajax_request) {
     $param_types = ""; 
 
     // กรองตามสาขา (Access Control)
-    if ($_SESSION['role_level'] != 4 && !empty($_SESSION['assigned_transport_origin_id'])) {
+    if (should_limit_to_assigned_origin()) {
         $where_clauses[] = "o.transport_origin_id = ?";
-        $params[] = $_SESSION['assigned_transport_origin_id'];
+        $params[] = current_assigned_transport_origin_id();
         $param_types .= "i";
     }
 
@@ -83,7 +83,7 @@ if ($is_ajax_request) {
     }
 
     // กรองตามต้นทางขนส่ง (Admin/Level 1)
-    if (has_role([1, 4]) && !empty($filter_transport_origin)) {
+    if (user_can_filter_all_origins() && !empty($filter_transport_origin)) {
         $where_clauses[] = "o.transport_origin_id = ?";
         $params[] = $filter_transport_origin;
         $param_types .= "i";
@@ -189,7 +189,7 @@ if ($result_salesman && $result_salesman->num_rows > 0) {
 }
 
 $transport_origin_options_html = '<option value="">ต้นทางทั้งหมด</option>';
-if (has_role([1, 4])) {
+if (user_can_filter_all_origins()) {
     $sql_transport = "SELECT transport_origin_id, origin_name FROM transport_origins ORDER BY origin_name";
     $result_transport = $conn->query($sql_transport);
     if ($result_transport && $result_transport->num_rows > 0) {
@@ -295,7 +295,7 @@ $default_date_end = date('Y-m-d');
                                 <option value="ยกเลิก">ยกเลิก</option>
                             </select>
                         </div>
-                         <?php if (has_role([1, 4])): ?>
+                        <?php if (user_can_filter_all_origins()): ?>
                         <div class="col-lg-2 col-md-6 mb-3">
                             <label for="filter_transport_origin">ต้นทางขนส่ง</label>
                             <select class="form-control select2-basic" id="filter_transport_origin" name="filter_transport_origin">
@@ -380,7 +380,8 @@ $default_date_end = date('Y-m-d');
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        const currentUserRole = <?php echo json_encode($_SESSION['role_level'] ?? 0); ?>;
+        const canDeleteCancelledOrder = <?php echo json_encode(has_permission('orders.delete', [2, 4])); ?>;
+        const currentUserRole = canDeleteCancelledOrder ? 2 : 0;
         // เก็บ State ปัจจุบันของการค้นหาไว้ในตัวแปร JS เพื่อใช้กับการ Pagination และ Export
         let currentPage = 1;
         let currentFilters = {};
@@ -571,6 +572,8 @@ $default_date_end = date('Y-m-d');
                             const d = response.data;
                             let staffInfo = d.assigned_staff;
                             if (d.assigned_staff_phone) staffInfo += ` (${d.assigned_staff_phone})`;
+                            let salesmanInfo = d.salesman_code ? `${d.salesman_code} - ${d.salesman_name || ''}` : '-';
+                            if (d.salesman_phone) salesmanInfo += ` (${d.salesman_phone})`;
 
                             let html = `
                                 <div class="container-fluid">
@@ -590,7 +593,7 @@ $default_date_end = date('Y-m-d');
                                             <table class="table table-sm table-bordered">
                                                 <tr><th style="width: 35%;">ชื่อลูกค้า</th><td>${d.custname}</td></tr>
                                                 <tr><th>ที่อยู่ (ตามบิล)</th><td>${d.shipaddr}</td></tr>
-                                                <tr><th>พนักงานขาย</th><td>${d.salesman_code ? `${d.salesman_code} - ${d.salesman_name}` : '-'}</td></tr>
+                                                <tr><th>พนักงานขาย</th><td>${salesmanInfo}</td></tr>
                                             </table>
                                         </div>
                                     </div>

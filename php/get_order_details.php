@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 
 // ใช้ __DIR__ เพื่อให้ path ถูกต้องเสมอ
 require_once __DIR__ . '/check_session.php';
-require_login([1, 2, 3, 4]); // ทุกสิทธิ์ที่ login สามารถดูรายละเอียดได้
+require_permission('orders.view_details', [1, 2, 3, 4]); // ทุกสิทธิ์ที่ login สามารถดูรายละเอียดได้
 require_once __DIR__ . '/db_connect.php';
 
 $response = ['status' => 'error', 'message' => 'ไม่พบข้อมูล'];
@@ -19,6 +19,7 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
                 cs.shipaddr,
                 cs.code as salesman_code,
                 cs.lname as salesman_name,
+                ss.phone as salesman_phone,
                 t_org.origin_name,
                 st.staff_name,
                 st.staff_phone,
@@ -27,6 +28,7 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
                 CONCAT_WS(' ', org.moo, org.mooban, org.tambon, org.amphoe, org.province) as full_origin_address
             FROM orders o
             LEFT JOIN cssale cs ON o.cssale_docno = cs.docno
+            LEFT JOIN sales_staff ss ON ss.sales_code = cs.code
             LEFT JOIN transport_origins t_org ON o.transport_origin_id = t_org.transport_origin_id
             LEFT JOIN staff st ON o.assigned_staff_id = st.staff_id
             LEFT JOIN vehicles v ON o.assigned_vehicle_id = v.vehicle_id

@@ -7,9 +7,9 @@ $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVE
 $project_folder = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . $project_folder . '/');
 $dashboard_where_clauses = [];$dashboard_params = [];$dashboard_param_types = "";
-if (is_logged_in() && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned_transport_origin_id'])) {
+if (should_limit_to_assigned_origin()) {
     $dashboard_where_clauses[] = "transport_origin_id = ?";
-    $dashboard_params[] = $_SESSION['assigned_transport_origin_id'];
+    $dashboard_params[] = current_assigned_transport_origin_id();
     $dashboard_param_types .= "i";
 }
 $dashboard_sql_where = "";
@@ -565,7 +565,7 @@ $conn->close();
                         <i class="fas fa-search-dollar"></i>เช็คราคา
                     </a>
                 </div>
-                <?php if (has_role([1, 2, 4])): ?>
+                <?php if (has_permission('orders.create', [1, 2, 4])): ?>
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
                     <a href="<?php echo BASE_URL; ?>pages/add_order_form.php" class="btn btn-primary btn-block">
                         <i class="fas fa-plus-circle"></i>เพิ่มรายการ
@@ -573,7 +573,7 @@ $conn->close();
                 </div>
                 <?php endif; ?>
                 
-                <?php if (has_role([2, 3, 4])): ?>
+                <?php if (has_permission('orders.acknowledge', [2, 3, 4])): ?>
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
                     <a href="<?php echo BASE_URL; ?>pages/pending_acknowledgement.php" class="btn btn-info btn-block">
                         <i class="fas fa-inbox"></i>รอรับเรื่อง
@@ -597,10 +597,15 @@ $conn->close();
                     </a>
                 </div>
                 
-                <?php if (has_role([4])): ?>
+                <?php if (has_permission('admin.access', [4])): ?>
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
                     <a href="<?php echo BASE_URL; ?>pages/analytics_dashboard.php" class="btn btn-outline-primary btn-block">
                         <i class="fas fa-chart-line"></i>Analytics
+                    </a>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                    <a href="<?php echo BASE_URL; ?>pages/manage_users_roles.php" class="btn btn-outline-dark btn-block">
+                        <i class="fas fa-user-shield"></i>ผู้ใช้/สิทธิ์
                     </a>
                 </div>
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
@@ -611,6 +616,11 @@ $conn->close();
                 <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
                     <a href="<?php echo BASE_URL; ?>pages/manage_staff_vehicles.php" class="btn btn-outline-danger btn-block">
                         <i class="fas fa-id-card-alt"></i>พนักงาน/รถ
+                    </a>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                    <a href="<?php echo BASE_URL; ?>pages/manage_sales_staff.php" class="btn btn-outline-info btn-block">
+                        <i class="fas fa-user-tie"></i>พนักงานขาย
                     </a>
                 </div>
                 <?php endif; ?>

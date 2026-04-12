@@ -1,6 +1,6 @@
 <?php
 require_once '../php/check_session.php';
-require_login([2, 3, 4]);
+require_permission('orders.acknowledge', [2, 3, 4]);
 require_once '../php/db_connect.php';
 
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
@@ -22,11 +22,11 @@ if ($is_ajax_request) {
     $params = [];
     $param_types = '';
 
-    if (is_logged_in() && $_SESSION['role_level'] != 4 && !empty($_SESSION['assigned_transport_origin_id'])) {
-        $where_clauses[] = 'o.transport_origin_id = ?';
-        $params[] = (int) $_SESSION['assigned_transport_origin_id'];
-        $param_types .= 'i';
-    }
+if (should_limit_to_assigned_origin()) {
+    $where_clauses[] = 'o.transport_origin_id = ?';
+    $params[] = (int) current_assigned_transport_origin_id();
+    $param_types .= 'i';
+}
 
     if ($search_docno !== '') {
         $where_clauses[] = 'o.cssale_docno LIKE ?';
@@ -306,7 +306,7 @@ $conn->close();
                             <button class="btn btn-info btn-sm change-origin-btn" data-orderid="${row.order_id}" data-current-origin="${escapeAttr(row.transport_origin_name || '')}">
                                 <i class="fas fa-exchange-alt"></i> เปลี่ยนต้นทาง
                             </button>
-                            <?php if (has_role([2, 4])): ?>
+                            <?php if (has_permission('orders.cancel', [2, 4])): ?>
                             <button class="btn btn-danger btn-sm cancel-btn" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
                                 <i class="fas fa-times-circle"></i> ยกเลิก
                             </button>
@@ -403,6 +403,12 @@ $conn->close();
                         if (d.assigned_staff_phone) {
                             staffInfo += ` (${escapeHtml(d.assigned_staff_phone)})`;
                         }
+                        let salesmanInfo = d.salesman_code
+                            ? `${escapeHtml(d.salesman_code)} - ${escapeHtml(d.salesman_name || '')}`
+                            : '-';
+                        if (d.salesman_phone) {
+                            salesmanInfo += ` (${escapeHtml(d.salesman_phone)})`;
+                        }
 
                         const html = `
                             <div class="container-fluid">
@@ -422,7 +428,7 @@ $conn->close();
                                         <table class="table table-sm table-bordered">
                                             <tr><th style="width: 35%;">ชื่อลูกค้า</th><td>${escapeHtml(d.custname || '-')}</td></tr>
                                             <tr><th>ที่อยู่ (ตามบิล)</th><td>${escapeHtml(d.shipaddr || '-')}</td></tr>
-                                            <tr><th>พนักงานขาย</th><td>${d.salesman_code ? `${escapeHtml(d.salesman_code)} - ${escapeHtml(d.salesman_name || '')}` : '-'}</td></tr>
+                                            <tr><th>พนักงานขาย</th><td>${salesmanInfo}</td></tr>
                                         </table>
                                     </div>
                                 </div>
