@@ -29,9 +29,10 @@ try {
     
     $order_data = $check_result->fetch_assoc();
     
-    // Only allow changing origin for pending acknowledgement orders
-    if ($order_data['status'] !== 'รอรับเรื่อง') {
-        throw new Exception('สามารถเปลี่ยนต้นทางได้เฉพาะออเดอร์ที่มีสถานะ "รอรับเรื่อง" เท่านั้น');
+    // Allow changing origin before delivery is assigned
+    $allowed_statuses = ['รอรับเรื่อง', 'รับเรื่อง'];
+    if (!in_array($order_data['status'], $allowed_statuses, true)) {
+        throw new Exception('สามารถเปลี่ยนต้นทางได้เฉพาะออเดอร์ที่มีสถานะ "รอรับเรื่อง" หรือ "รับเรื่อง" เท่านั้น');
     }
     
     // Verify transport origin exists
