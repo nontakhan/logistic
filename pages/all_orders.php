@@ -380,8 +380,7 @@ $default_date_end = date('Y-m-d');
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        const canDeleteCancelledOrder = <?php echo json_encode(has_permission('orders.delete', [2, 4])); ?>;
-        const currentUserRole = canDeleteCancelledOrder ? 2 : 0;
+        const canDeleteCancelledOrder = <?php echo json_encode(has_permission('orders.delete', [2, 3, 4])); ?>;
         // เก็บ State ปัจจุบันของการค้นหาไว้ในตัวแปร JS เพื่อใช้กับการ Pagination และ Export
         let currentPage = 1;
         let currentFilters = {};
@@ -614,7 +613,7 @@ $default_date_end = date('Y-m-d');
                             `;
                             modalPlaceholder.html(html);
 
-                             if (d.status === 'ยกเลิก' && (currentUserRole === 2 || currentUserRole === 4)) {
+                             if (d.status === 'ยกเลิก' && canDeleteCancelledOrder) {
                                 const deleteButton = `<button type="button" class="btn btn-danger delete-in-modal-btn" data-id="${d.order_id}"><i class="fas fa-trash-alt mr-1"></i> ลบรายการนี้</button>`;
                                 actionButtonsContainer.html(deleteButton);
                             }
