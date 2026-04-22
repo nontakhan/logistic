@@ -1,7 +1,7 @@
 <?php
 // pages/add_order_form_super_fast.php - Super Fast Version
 require_once '../php/check_session.php';
-require_permission('orders.create', [1, 2, 4]);
+require_permission('orders.create', [1, 2, 3, 4]);
 
 require_once '../php/db_connect.php'; 
 

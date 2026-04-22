@@ -43,6 +43,7 @@ function legacy_role_permissions_map()
         ),
         3 => array(
             'dashboard.view',
+            'orders.create',
             'orders.view_all',
             'orders.view_details',
             'orders.acknowledge',
@@ -162,7 +163,7 @@ function permission_allowed_roles_map()
 {
     return array(
         'dashboard.view' => array(1, 2, 3, 4),
-        'orders.create' => array(1, 2, 4),
+        'orders.create' => array(1, 2, 3, 4),
         'orders.view_all' => array(1, 2, 3, 4),
         'orders.view_details' => array(1, 2, 3, 4),
         'orders.acknowledge' => array(2, 3, 4),
