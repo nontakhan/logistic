@@ -211,6 +211,7 @@ $conn->close();
         </div>
         
         <form id="addOrderForm">
+            <?php echo csrf_input(); ?>
             <div class="form-row">
                 <div class="form-group col-md-6">
                     <div class="d-flex justify-content-between align-items-center">
@@ -286,6 +287,7 @@ $conn->close();
             </button>
           </div>
           <form id="addNewBillForm">
+            <?php echo csrf_input(); ?>
             <div class="modal-body">
               <div class="form-group">
                 <label for="new_docno">เลขที่บิล</label>
@@ -322,6 +324,7 @@ $conn->close();
 
     <!-- JavaScript scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <?php echo csrf_ajax_script(); ?>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

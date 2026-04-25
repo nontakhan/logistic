@@ -49,6 +49,7 @@ function role_level_badge_class($role_level)
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf_token();
     $action = isset($_POST['action']) ? $_POST['action'] : '';
 
     try {
@@ -480,6 +481,7 @@ $conn->close();
                         </div>
                     </div>
                     <form method="post">
+                        <?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="save_user">
                         <input type="hidden" name="user_id" value="<?php echo (int) $user_form['user_id']; ?>">
                         <div class="form-group">
@@ -576,6 +578,7 @@ $conn->close();
                                                 </a>
                                                 <?php if ((int) $user['user_id'] !== (int) (isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0)): ?>
                                                     <form method="post" class="delete-user-form mb-0">
+                                                        <?php echo csrf_input(); ?>
                                                         <input type="hidden" name="action" value="delete_user">
                                                         <input type="hidden" name="delete_user_id" value="<?php echo (int) $user['user_id']; ?>">
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">

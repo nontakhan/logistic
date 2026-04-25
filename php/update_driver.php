@@ -2,6 +2,7 @@
 // php/update_driver.php
 require_once 'check_session.php';
 require_permission('orders.update_driver', [2, 3, 4]); // Staff, Manager, Admin can update driver
+require_csrf_token();
 require_once 'db_connect.php';
 
 header('Content-Type: application/json');

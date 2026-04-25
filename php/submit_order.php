@@ -1,11 +1,14 @@
 <?php
 // php/submit_order.php
 header('Content-Type: application/json');
+require_once 'check_session.php';
+require_permission('orders.create', [1, 2, 3, 4]);
 require_once 'db_connect.php';
 
 $response = array('status' => 'error', 'message' => 'มีบางอย่างผิดพลาด', 'errors' => []);
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    require_csrf_token();
     // รับและทำความสะอาดข้อมูลเบื้องต้น
     $cssale_docno = isset($_POST['cssale_docno']) ? trim($_POST['cssale_docno']) : null;
     $customer_address_origin_id = isset($_POST['customer_address_origin_id']) ? filter_var(trim($_POST['customer_address_origin_id']), FILTER_VALIDATE_INT) : null;

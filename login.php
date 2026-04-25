@@ -1,6 +1,6 @@
 <?php
 // logistic/login.php
-session_start();
+require_once __DIR__ . '/php/check_session.php';
 // ถ้า login อยู่แล้ว ให้ redirect ไปหน้า index.php
 if (isset($_SESSION['user_id'])) {
     header("Location: index.php");

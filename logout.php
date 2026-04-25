@@ -1,6 +1,6 @@
 <?php
 // logout.php
-session_start();
+require_once __DIR__ . '/php/check_session.php';
 
 // ลบ session ทั้งหมด
 $_SESSION = array();

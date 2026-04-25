@@ -2,6 +2,7 @@
 // php/delete_all_cssale.php
 require_once 'check_session.php';
 require_permission('cssale.manage', [4]); // Admin only
+require_csrf_token();
 require_once 'db_connect.php';
 
 header('Content-Type: application/json');

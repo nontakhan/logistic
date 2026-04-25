@@ -2,6 +2,7 @@
 // php/change_transport_origin.php
 require_once 'check_session.php';
 require_permission('orders.change_transport_origin', [2, 3, 4]);
+require_csrf_token();
 require_once 'db_connect.php';
 
 header('Content-Type: application/json');

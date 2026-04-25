@@ -10,6 +10,7 @@ require_once 'db_connect.php';
 $response = ['status' => 'error', 'message' => 'มีบางอย่างผิดพลาด', 'errors' => []];
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    require_csrf_token();
     // 1. รับและตรวจสอบข้อมูล
     $docno = isset($_POST['new_docno']) ? trim($_POST['new_docno']) : null;
     $docdate = isset($_POST['new_docdate']) ? trim($_POST['new_docdate']) : null;

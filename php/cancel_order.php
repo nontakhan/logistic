@@ -2,7 +2,8 @@
 // php/cancel_order.php
 header('Content-Type: application/json');
 require_once __DIR__ . '/check_session.php';
-require_permission('orders.cancel', [2, 3, 4]);
+require_permission('orders.cancel', [2, 4]);
+require_csrf_token();
 require_once 'db_connect.php';
 
 $response = array('status' => 'error', 'message' => 'ข้อมูลไม่ถูกต้อง');

@@ -23,6 +23,7 @@ function sales_staff_set_flash(string $type, string $message): void
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf_token();
     $action = $_POST['action'] ?? '';
 
     try {
@@ -366,6 +367,7 @@ $conn->close();
                         </div>
                     </div>
                     <form method="post">
+                        <?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="save_sales_staff">
                         <input type="hidden" name="original_sales_code" value="<?php echo htmlspecialchars($sales_staff_form['sales_code']); ?>">
                         <div class="form-group">
@@ -466,6 +468,7 @@ $conn->close();
                                                     <i class="fas fa-edit mr-1"></i>Edit
                                                 </a>
                                                 <form method="post" class="delete-sales-staff-form mb-0">
+                                                    <?php echo csrf_input(); ?>
                                                     <input type="hidden" name="action" value="delete_sales_staff">
                                                     <input type="hidden" name="delete_sales_code" value="<?php echo htmlspecialchars($row['sales_code']); ?>">
                                                     <button type="submit" class="btn btn-sm btn-outline-danger">

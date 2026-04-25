@@ -1,6 +1,8 @@
 <?php
 // php/get_origin_prices.php
 header('Content-Type: application/json');
+require_once 'check_session.php';
+require_permission('pricing.view', [1, 2, 3, 4]);
 require_once 'db_connect.php';
 
 $response = ['status' => 'error', 'message' => 'ไม่พบข้อมูล'];

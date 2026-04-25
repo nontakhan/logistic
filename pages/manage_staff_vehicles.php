@@ -23,6 +23,7 @@ function set_flash_message($type, $message)
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf_token();
     $action = $_POST['action'] ?? '';
 
     try {
@@ -311,6 +312,7 @@ $conn->close();
                 <div class="section-card">
                     <h4><i class="fas fa-user mr-2 text-danger"></i><?php echo $staff_form['staff_id'] ? 'แก้ไขพนักงาน' : 'เพิ่มพนักงาน'; ?></h4>
                     <form method="post">
+                        <?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="save_staff">
                         <input type="hidden" name="staff_id" value="<?php echo (int) $staff_form['staff_id']; ?>">
                         <div class="form-group">
@@ -341,6 +343,7 @@ $conn->close();
                 <div class="section-card">
                     <h4><i class="fas fa-truck mr-2 text-danger"></i><?php echo $vehicle_form['vehicle_id'] ? 'แก้ไขรถ' : 'เพิ่มรถ'; ?></h4>
                     <form method="post">
+                        <?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="save_vehicle">
                         <input type="hidden" name="vehicle_id" value="<?php echo (int) $vehicle_form['vehicle_id']; ?>">
                         <div class="form-group">
@@ -367,6 +370,7 @@ $conn->close();
                 <div class="section-card">
                     <h4><i class="fas fa-link mr-2 text-danger"></i>กำหนดรถประจำของพนักงาน</h4>
                     <form method="post">
+                        <?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="save_default_vehicle">
                         <div class="form-group">
                             <label for="binding_staff_id">พนักงาน</label>

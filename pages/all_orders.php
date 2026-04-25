@@ -375,12 +375,13 @@ $default_date_end = date('Y-m-d');
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <?php echo csrf_ajax_script(); ?>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        const canDeleteCancelledOrder = <?php echo json_encode(has_permission('orders.delete', [2, 3, 4])); ?>;
+        const canDeleteCancelledOrder = <?php echo json_encode(has_permission('orders.delete', [2, 4])); ?>;
         // เก็บ State ปัจจุบันของการค้นหาไว้ในตัวแปร JS เพื่อใช้กับการ Pagination และ Export
         let currentPage = 1;
         let currentFilters = {};

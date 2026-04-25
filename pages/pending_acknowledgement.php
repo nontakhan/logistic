@@ -239,6 +239,7 @@ $conn->close();
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <?php echo csrf_ajax_script(); ?>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
@@ -306,7 +307,7 @@ $conn->close();
                             <button class="btn btn-info btn-sm change-origin-btn" data-orderid="${row.order_id}" data-current-origin="${escapeAttr(row.transport_origin_name || '')}">
                                 <i class="fas fa-exchange-alt"></i> เปลี่ยนต้นทาง
                             </button>
-                            <?php if (has_permission('orders.cancel', [2, 3, 4])): ?>
+                            <?php if (has_permission('orders.cancel', [2, 4])): ?>
                             <button class="btn btn-danger btn-sm cancel-btn" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
                                 <i class="fas fa-times-circle"></i> ยกเลิก
                             </button>

@@ -1,6 +1,8 @@
 <?php
 // php/load_more_cssale.php - Lazy Load for CSSale options
 header('Content-Type: application/json');
+require_once 'check_session.php';
+require_permission('orders.create', [1, 2, 3, 4]);
 require_once 'db_connect.php';
 
 $response = ['status' => 'error', 'message' => 'ไม่พบข้อมูล'];
