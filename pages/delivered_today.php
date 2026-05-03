@@ -20,8 +20,8 @@ if ($is_ajax_request) {
     $offset = ($current_page - 1) * $items_per_page;
 
     $where_clauses = [
-        "o.updated_at >= CURDATE()",
-        "o.updated_at < CURDATE() + INTERVAL 1 DAY",
+        "o.delivered_at >= CURDATE()",
+        "o.delivered_at < CURDATE() + INTERVAL 1 DAY",
         "o.status = 'ส่งของแล้ว'"
     ];
     $params = [];
@@ -59,9 +59,9 @@ if ($is_ajax_request) {
                     t_org.origin_name AS transport_origin_name,
                     s.staff_name AS assigned_staff_name,
                     CONCAT(v.vehicle_name, ' (', v.vehicle_plate, ')') AS assigned_vehicle_info,
-                    o.updated_at AS delivery_time"
+                    o.delivered_at AS delivery_time"
                 . $sql_from . $sql_where .
-                " ORDER BY o.updated_at DESC
+                " ORDER BY o.delivered_at DESC
                   LIMIT ? OFFSET ?";
 
     $stmt_data = $conn->prepare($sql_data);

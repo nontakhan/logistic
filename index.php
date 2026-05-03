@@ -14,7 +14,7 @@ if (should_limit_to_assigned_origin()) {
 }
 $dashboard_sql_where = "";
 if (!empty($dashboard_where_clauses)) { $dashboard_sql_where = " WHERE " . implode(" AND ", $dashboard_where_clauses); }
-$sql_counts = "SELECT SUM(CASE WHEN status = 'รอรับเรื่อง' THEN 1 ELSE 0 END) AS count_pending_ack, SUM(CASE WHEN status = 'รับเรื่อง' THEN 1 ELSE 0 END) AS count_pending_assign, SUM(CASE WHEN status = 'รอส่งของ' THEN 1 ELSE 0 END) AS count_pending_delivery, SUM(CASE WHEN status = 'ส่งของแล้ว' AND updated_at >= CURDATE() AND updated_at < CURDATE() + INTERVAL 1 DAY THEN 1 ELSE 0 END) AS count_delivered_today FROM orders" . $dashboard_sql_where;
+$sql_counts = "SELECT SUM(CASE WHEN status = 'รอรับเรื่อง' THEN 1 ELSE 0 END) AS count_pending_ack, SUM(CASE WHEN status = 'รับเรื่อง' THEN 1 ELSE 0 END) AS count_pending_assign, SUM(CASE WHEN status = 'รอส่งของ' THEN 1 ELSE 0 END) AS count_pending_delivery, SUM(CASE WHEN status = 'ส่งของแล้ว' AND delivered_at >= CURDATE() AND delivered_at < CURDATE() + INTERVAL 1 DAY THEN 1 ELSE 0 END) AS count_delivered_today FROM orders" . $dashboard_sql_where;
 $stmt_counts = $conn->prepare($sql_counts);
 if (!empty($dashboard_params)) {
     $bind_params = array($dashboard_param_types);
