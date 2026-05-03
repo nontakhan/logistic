@@ -22,7 +22,7 @@ if (isset($_POST['order_id']) && !empty($_POST['order_id'])) {
         $current_order = $check_result->fetch_assoc();
         if ($current_order['status'] == 'รอรับเรื่อง') {
             // อัปเดตสถานะเป็น "รับเรื่อง"
-            $sql = "UPDATE orders SET status = 'รับเรื่อง' WHERE order_id = ?";
+            $sql = "UPDATE orders SET status = 'รับเรื่อง', acknowledged_at = NOW() WHERE order_id = ?";
             $stmt = $conn->prepare($sql);
             if ($stmt) {
                 $stmt->bind_param("i", $order_id);

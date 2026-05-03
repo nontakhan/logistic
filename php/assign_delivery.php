@@ -58,7 +58,7 @@ if (
 
             $stmt = $conn->prepare(
                 "UPDATE orders
-                 SET status = 'รอส่งของ', assigned_staff_id = ?, assigned_vehicle_id = ?
+                 SET status = 'รอส่งของ', assigned_staff_id = ?, assigned_vehicle_id = ?, assigned_at = NOW()
                  WHERE order_id = ?"
             );
 

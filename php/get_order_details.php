@@ -48,6 +48,10 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
             // เตรียมข้อมูลที่จำเป็นสำหรับ modal
             $data['order_date_formatted'] = !empty($data['order_date']) ? date("d/m/Y H:i", strtotime($data['order_date'])) : '-';
             $data['updated_at_formatted'] = !empty($data['updated_at']) ? date("d/m/Y H:i", strtotime($data['updated_at'])) : '-';
+            $data['bill_created_at_formatted'] = !empty($data['bill_created_at']) ? date("d/m/Y H:i", strtotime($data['bill_created_at'])) : '-';
+            $data['acknowledged_at_formatted'] = !empty($data['acknowledged_at']) ? date("d/m/Y H:i", strtotime($data['acknowledged_at'])) : '-';
+            $data['assigned_at_formatted'] = !empty($data['assigned_at']) ? date("d/m/Y H:i", strtotime($data['assigned_at'])) : '-';
+            $data['delivered_at_formatted'] = !empty($data['delivered_at']) ? date("d/m/Y H:i", strtotime($data['delivered_at'])) : '-';
             
             // จัดเตรียมสถานะ badge
             $status_badge = 'badge-light-secondary';
@@ -82,6 +86,38 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
             
             // เตรียมข้อมูลต้นทาง
             $data['transport_origin'] = $data['origin_name'] ?? '-';
+
+            $timeline_steps = [
+                [
+                    'key' => 'bill_created',
+                    'label' => 'สร้างบิล',
+                    'icon' => 'fa-file-invoice',
+                    'time' => $data['bill_created_at_formatted'],
+                    'completed' => !empty($data['bill_created_at'])
+                ],
+                [
+                    'key' => 'acknowledged',
+                    'label' => 'รับเรื่อง',
+                    'icon' => 'fa-clipboard-check',
+                    'time' => $data['acknowledged_at_formatted'],
+                    'completed' => !empty($data['acknowledged_at'])
+                ],
+                [
+                    'key' => 'assigned',
+                    'label' => 'จัดคน/รถ',
+                    'icon' => 'fa-user-cog',
+                    'time' => $data['assigned_at_formatted'],
+                    'completed' => !empty($data['assigned_at'])
+                ],
+                [
+                    'key' => 'delivered',
+                    'label' => 'ส่งของแล้ว',
+                    'icon' => 'fa-check-double',
+                    'time' => $data['delivered_at_formatted'],
+                    'completed' => !empty($data['delivered_at'])
+                ]
+            ];
+            $data['status_timeline'] = $timeline_steps;
             
             $response = [
                 'status' => 'success',

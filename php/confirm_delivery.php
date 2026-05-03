@@ -21,7 +21,7 @@ if (isset($_POST['order_id']) && !empty($_POST['order_id'])) {
     if ($check_result->num_rows > 0) {
         $current_order = $check_result->fetch_assoc();
         if ($current_order['status'] == 'รอส่งของ') {
-            $sql = "UPDATE orders SET status = 'ส่งของแล้ว' WHERE order_id = ?";
+            $sql = "UPDATE orders SET status = 'ส่งของแล้ว', delivered_at = NOW() WHERE order_id = ?";
             $stmt = $conn->prepare($sql);
             if ($stmt) {
                 $stmt->bind_param("i", $order_id);

@@ -242,6 +242,57 @@ $default_date_end = date('Y-m-d');
             padding: 0;
             line-height: calc(1.5em + .75rem);
         }
+        .status-timeline {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(130px, 1fr));
+            gap: 12px;
+            margin: 0 0 1.25rem;
+        }
+        .timeline-step {
+            position: relative;
+            min-height: 112px;
+            padding: 14px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+        }
+        .timeline-step.is-completed {
+            border-color: #b7e4c7;
+            background: #f0fdf4;
+        }
+        .timeline-step.is-pending {
+            color: #6b7280;
+        }
+        .timeline-icon {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #e5e7eb;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+        .timeline-step.is-completed .timeline-icon {
+            background: #16a34a;
+            color: #fff;
+        }
+        .timeline-label {
+            display: block;
+            font-weight: 700;
+            color: #111827;
+        }
+        .timeline-time {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.92rem;
+        }
+        @media (max-width: 767.98px) {
+            .status-timeline {
+                grid-template-columns: repeat(2, minmax(120px, 1fr));
+            }
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -574,9 +625,24 @@ $default_date_end = date('Y-m-d');
                             if (d.assigned_staff_phone) staffInfo += ` (${d.assigned_staff_phone})`;
                             let salesmanInfo = d.salesman_code ? `${d.salesman_code} - ${d.salesman_name || ''}` : '-';
                             if (d.salesman_phone) salesmanInfo += ` (${d.salesman_phone})`;
+                            const timelineHtml = (d.status_timeline || []).map(step => {
+                                const completedClass = step.completed ? 'is-completed' : 'is-pending';
+                                const timeText = step.completed ? step.time : 'ยังไม่ถึงขั้นตอนนี้';
+                                return `
+                                    <div class="timeline-step ${completedClass}">
+                                        <span class="timeline-icon"><i class="fas ${step.icon}"></i></span>
+                                        <span class="timeline-label">${step.label}</span>
+                                        <span class="timeline-time">${timeText}</span>
+                                    </div>
+                                `;
+                            }).join('');
 
                             let html = `
                                 <div class="container-fluid">
+                                    <h5 class="text-primary"><i class="fas fa-clock mr-2"></i>ลำดับเวลาเปลี่ยนสถานะ</h5>
+                                    <div class="status-timeline">
+                                        ${timelineHtml}
+                                    </div>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <h5 class="text-primary"><i class="fas fa-file-invoice mr-2"></i>ข้อมูลใบสั่งซื้อ</h5>

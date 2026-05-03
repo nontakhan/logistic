@@ -45,8 +45,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // --- เตรียม SQL Statement ---
-    $sql = "INSERT INTO orders (cssale_docno, customer_address_origin_id, transport_origin_id, product_details, priority, order_date, status) 
-            VALUES (?, ?, ?, ?, ?, ?, 'รอรับเรื่อง')";
+    $sql = "INSERT INTO orders (cssale_docno, customer_address_origin_id, transport_origin_id, product_details, priority, order_date, status, bill_created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, 'รอรับเรื่อง', NOW())";
     
     $stmt = $conn->prepare($sql);
 
