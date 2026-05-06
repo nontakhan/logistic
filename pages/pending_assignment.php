@@ -389,7 +389,7 @@ $conn->close();
                                 data-current-origin="${escapeAttr(row.transport_origin_name || '')}">
                                 <i class="fas fa-exchange-alt"></i> เปลี่ยนต้นทาง
                             </button>
-                            <?php if (has_permission('orders.cancel', [2, 4])): ?>
+                            <?php if (has_permission('orders.cancel', [2, 3, 4])): ?>
                             <button class="btn btn-danger btn-sm cancel-btn" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
                                 <i class="fas fa-times-circle"></i> ยกเลิก
                             </button>
