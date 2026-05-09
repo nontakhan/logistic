@@ -269,6 +269,7 @@ $conn->close();
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <?php echo csrf_ajax_script(); ?>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
@@ -352,10 +353,25 @@ $conn->close();
                                 data-current-vehicle-id="${row.assigned_vehicle_id || ''}">
                                 <i class="fas fa-user-edit"></i> แก้ไขคนขับ
                             </button>
-                            <?php if (has_permission('orders.cancel', [2, 4])): ?>
-                            <button class="btn btn-danger btn-sm cancel-btn" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
-                                <i class="fas fa-times-circle"></i> ยกเลิก
-                            </button>
+                            <?php if (has_role([3, 4]) || has_permission('orders.cancel', [2, 4])): ?>
+                            <div class="dropdown d-inline-block">
+                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="เพิ่มเติม">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <?php if (has_role([3, 4])): ?>
+                                    <button class="dropdown-item rollback-status-btn" type="button" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}" data-target-status="รับเรื่อง">
+                                        <i class="fas fa-undo mr-2"></i> ย้อนสถานะ
+                                    </button>
+                                    <?php endif; ?>
+                                    <?php if (has_permission('orders.cancel', [2, 4])): ?>
+                                    <?php if (has_role([3, 4])): ?><div class="dropdown-divider"></div><?php endif; ?>
+                                    <button class="dropdown-item text-danger cancel-btn" type="button" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
+                                        <i class="fas fa-times-circle mr-2"></i> ยกเลิก
+                                    </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -554,6 +570,46 @@ $conn->close();
                             Swal.close();
                             if (response.status === 'success') {
                                 Swal.fire({ icon: 'success', title: 'ยกเลิกสำเร็จ!', text: response.message, timer: 1500, showConfirmButton: false })
+                                    .then(() => fetchData(currentPage));
+                            } else {
+                                Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด!', text: response.message });
+                            }
+                        },
+                        error: function() {
+                            Swal.close();
+                            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ' });
+                        }
+                    });
+                });
+            });
+
+            $('#orders-table-body').on('click', '.rollback-status-btn', function() {
+                const orderId = $(this).data('orderid');
+                const docNo = $(this).data('docno');
+                const targetStatus = $(this).data('target-status');
+
+                Swal.fire({
+                    title: 'ยืนยันการย้อนสถานะ',
+                    text: `ต้องการย้อนสถานะบิลเลขที่: ${docNo} กลับเป็น "${targetStatus}" ใช่หรือไม่?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#f59e0b',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'ใช่, ย้อนสถานะ',
+                    cancelButtonText: 'ไม่'
+                }).then((result) => {
+                    if (!result.isConfirmed) return;
+
+                    Swal.fire({ title: 'กำลังย้อนสถานะ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    $.ajax({
+                        url: '<?php echo BASE_URL; ?>php/rollback_order_status.php',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: { order_id: orderId },
+                        success: function(response) {
+                            Swal.close();
+                            if (response.status === 'success') {
+                                Swal.fire({ icon: 'success', title: 'ย้อนสถานะสำเร็จ!', text: response.message, timer: 1500, showConfirmButton: false })
                                     .then(() => fetchData(currentPage));
                             } else {
                                 Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด!', text: response.message });

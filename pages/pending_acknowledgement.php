@@ -240,6 +240,7 @@ $conn->close();
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <?php echo csrf_ajax_script(); ?>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
@@ -298,21 +299,27 @@ $conn->close();
                         <td>${escapeHtml(row.order_date_formatted || '-')}</td>
                         <td>${escapeHtml(row.priority || '-')}</td>
                         <td class="action-buttons">
-                            <?php if (has_role([3, 4])): ?>
-                            <button class="btn btn-secondary btn-sm view-details-btn" data-orderid="${row.order_id}" title="ดูรายละเอียด">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <?php endif; ?>
                             <button class="btn btn-success btn-sm acknowledge-btn" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
                                 <i class="fas fa-check-circle"></i> รับเรื่อง
                             </button>
                             <?php if (has_role([3, 4])): ?>
-                            <button class="btn btn-info btn-sm change-origin-btn" data-orderid="${row.order_id}" data-current-origin="${escapeAttr(row.transport_origin_name || '')}">
-                                <i class="fas fa-exchange-alt"></i> เปลี่ยนต้นทาง
-                            </button>
-                            <button class="btn btn-danger btn-sm cancel-btn" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
-                                <i class="fas fa-times-circle"></i> ยกเลิก
-                            </button>
+                            <div class="dropdown d-inline-block">
+                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="เพิ่มเติม">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <button class="dropdown-item view-details-btn" type="button" data-orderid="${row.order_id}">
+                                        <i class="fas fa-eye mr-2"></i> ดูรายละเอียด
+                                    </button>
+                                    <button class="dropdown-item change-origin-btn" type="button" data-orderid="${row.order_id}" data-current-origin="${escapeAttr(row.transport_origin_name || '')}">
+                                        <i class="fas fa-exchange-alt mr-2"></i> เปลี่ยนต้นทาง
+                                    </button>
+                                    <div class="dropdown-divider"></div>
+                                    <button class="dropdown-item text-danger cancel-btn" type="button" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
+                                        <i class="fas fa-times-circle mr-2"></i> ยกเลิก
+                                    </button>
+                                </div>
+                            </div>
                             <?php endif; ?>
                         </td>
                     </tr>

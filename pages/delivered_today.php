@@ -173,10 +173,13 @@ $conn->close();
                         <th>วันที่สั่ง</th>
                         <th>เวลาส่ง</th>
                         <th>ความเร่งด่วน</th>
+                        <?php if (has_role([3, 4])): ?>
+                        <th>ดำเนินการ</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody id="orders-table-body">
-                    <tr><td colspan="11" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>
+                    <tr><td colspan="<?php echo has_role([3, 4]) ? 12 : 11; ?>" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -187,17 +190,25 @@ $conn->close();
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <?php echo csrf_ajax_script(); ?>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         let currentPage = 1;
+        const emptyTableColspan = <?php echo has_role([3, 4]) ? 12 : 11; ?>;
 
         function escapeHtml(value) {
             return $('<div>').text(value || '').html();
         }
 
+        function escapeAttr(value) {
+            return String(value || '').replace(/"/g, '&quot;');
+        }
+
         function fetchData(page = 1) {
             currentPage = page;
-            $('#orders-table-body').html('<tr><td colspan="11" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>');
+            $('#orders-table-body').html(`<tr><td colspan="${emptyTableColspan}" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>`);
 
             $.ajax({
                 url: 'delivered_today.php',
@@ -220,7 +231,7 @@ $conn->close();
                     $('#items-count-info').html(`(${response.total_items} รายการ)`);
                 },
                 error: function() {
-                    $('#orders-table-body').html('<tr><td colspan="11" class="text-center text-danger py-4">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>');
+                    $('#orders-table-body').html(`<tr><td colspan="${emptyTableColspan}" class="text-center text-danger py-4">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`);
                 }
             });
         }
@@ -230,7 +241,7 @@ $conn->close();
             tbody.empty();
 
             if (!orders.length) {
-                tbody.html('<tr><td colspan="11" class="text-center py-4">ไม่พบรายการที่ส่งของแล้วในวันนี้</td></tr>');
+                tbody.html(`<tr><td colspan="${emptyTableColspan}" class="text-center py-4">ไม่พบรายการที่ส่งของแล้วในวันนี้</td></tr>`);
                 return;
             }
 
@@ -248,6 +259,20 @@ $conn->close();
                         <td>${escapeHtml(row.order_date_formatted || '-')}</td>
                         <td><div class="delivery-time">${escapeHtml(row.delivery_time_formatted || '-')}</div></td>
                         <td>${escapeHtml(row.priority || '-')}</td>
+                        <?php if (has_role([3, 4])): ?>
+                        <td class="action-buttons">
+                            <div class="dropdown d-inline-block">
+                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="เพิ่มเติม">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <button class="dropdown-item rollback-status-btn" type="button" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}" data-target-status="รอส่งของ">
+                                        <i class="fas fa-undo mr-2"></i> ย้อนสถานะ
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                        <?php endif; ?>
                     </tr>
                 `);
             });
@@ -297,6 +322,46 @@ $conn->close();
 
             $('#refreshBtn').on('click', function() {
                 fetchData(currentPage);
+            });
+
+            $('#orders-table-body').on('click', '.rollback-status-btn', function() {
+                const orderId = $(this).data('orderid');
+                const docNo = $(this).data('docno');
+                const targetStatus = $(this).data('target-status');
+
+                Swal.fire({
+                    title: 'ยืนยันการย้อนสถานะ',
+                    text: `ต้องการย้อนสถานะบิลเลขที่: ${docNo} กลับเป็น "${targetStatus}" ใช่หรือไม่?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#f59e0b',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'ใช่, ย้อนสถานะ',
+                    cancelButtonText: 'ไม่'
+                }).then((result) => {
+                    if (!result.isConfirmed) return;
+
+                    Swal.fire({ title: 'กำลังย้อนสถานะ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    $.ajax({
+                        url: '<?php echo BASE_URL; ?>php/rollback_order_status.php',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: { order_id: orderId },
+                        success: function(response) {
+                            Swal.close();
+                            if (response.status === 'success') {
+                                Swal.fire({ icon: 'success', title: 'ย้อนสถานะสำเร็จ!', text: response.message, timer: 1500, showConfirmButton: false })
+                                    .then(() => fetchData(currentPage));
+                            } else {
+                                Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด!', text: response.message });
+                            }
+                        },
+                        error: function() {
+                            Swal.close();
+                            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ' });
+                        }
+                    });
+                });
             });
 
             $('#paginationContainer').on('click', 'a.page-link', function(e) {
