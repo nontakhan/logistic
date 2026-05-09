@@ -298,16 +298,18 @@ $conn->close();
                         <td>${escapeHtml(row.order_date_formatted || '-')}</td>
                         <td>${escapeHtml(row.priority || '-')}</td>
                         <td class="action-buttons">
+                            <?php if (has_role([3, 4])): ?>
                             <button class="btn btn-secondary btn-sm view-details-btn" data-orderid="${row.order_id}" title="ดูรายละเอียด">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            <?php endif; ?>
                             <button class="btn btn-success btn-sm acknowledge-btn" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
                                 <i class="fas fa-check-circle"></i> รับเรื่อง
                             </button>
+                            <?php if (has_role([3, 4])): ?>
                             <button class="btn btn-info btn-sm change-origin-btn" data-orderid="${row.order_id}" data-current-origin="${escapeAttr(row.transport_origin_name || '')}">
                                 <i class="fas fa-exchange-alt"></i> เปลี่ยนต้นทาง
                             </button>
-                            <?php if (has_permission('orders.cancel', [2, 3, 4])): ?>
                             <button class="btn btn-danger btn-sm cancel-btn" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
                                 <i class="fas fa-times-circle"></i> ยกเลิก
                             </button>
