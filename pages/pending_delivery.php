@@ -353,7 +353,7 @@ $conn->close();
                                 data-current-vehicle-id="${row.assigned_vehicle_id || ''}">
                                 <i class="fas fa-user-edit"></i> แก้ไขคนขับ
                             </button>
-                            <?php if (has_role([3, 4]) || has_permission('orders.cancel', [2, 4])): ?>
+                            <?php if (has_role([3, 4])): ?>
                             <div class="dropdown d-inline-block">
                                 <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="เพิ่มเติม">
                                     <i class="fas fa-ellipsis-h"></i>
@@ -364,8 +364,8 @@ $conn->close();
                                         <i class="fas fa-undo mr-2"></i> ย้อนสถานะ
                                     </button>
                                     <?php endif; ?>
-                                    <?php if (has_permission('orders.cancel', [2, 4])): ?>
-                                    <?php if (has_role([3, 4])): ?><div class="dropdown-divider"></div><?php endif; ?>
+                                    <?php if (has_role([4])): ?>
+                                    <div class="dropdown-divider"></div>
                                     <button class="dropdown-item text-danger cancel-btn" type="button" data-orderid="${row.order_id}" data-docno="${escapeAttr(row.cssale_docno || '')}">
                                         <i class="fas fa-times-circle mr-2"></i> ยกเลิก
                                     </button>
