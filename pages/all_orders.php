@@ -432,7 +432,7 @@ $default_date_end = date('Y-m-d');
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        const canDeleteCancelledOrder = <?php echo json_encode(has_permission('orders.delete', [2, 4])); ?>;
+        const canDeleteCancelledOrder = <?php echo json_encode(has_permission('orders.delete', [2, 3, 4])); ?>;
         // เก็บ State ปัจจุบันของการค้นหาไว้ในตัวแปร JS เพื่อใช้กับการ Pagination และ Export
         let currentPage = 1;
         let currentFilters = {};
