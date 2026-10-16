@@ -1,0 +1,6 @@
+{
+  "files": ["pages/analytics_dashboard.php"],
+  "insertBefore": "</body>",
+  "commentSyntax": "html",
+  "cspChecked": true
+}

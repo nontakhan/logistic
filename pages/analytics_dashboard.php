@@ -119,18 +119,60 @@ $default_date_end = date('Y-m-d');
         /* Filter Section */
         .filter-card {
             background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-red);
+            border: 1px solid #dce1e8;
+            border-radius: 12px;
+            padding: 0 24px;
+            margin-bottom: 24px;
         }
-        
+
+        .analytics-filter-section {
+            display: grid;
+            grid-template-columns: 144px minmax(0, 1fr);
+            gap: 24px;
+            padding: 24px 0;
+        }
+
+        .analytics-filter-section + .analytics-filter-section {
+            border-top: 1px solid #e7eaf0;
+        }
+
+        .analytics-filter-section h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            line-height: 1.6;
+            color: #263244;
+            margin: 0;
+        }
+
+        .analytics-filter-fields {
+            display: grid;
+            gap: 12px 16px;
+            min-width: 0;
+            align-items: start;
+        }
+
+        .analytics-filter-time {
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        }
+
+        .analytics-filter-location {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .analytics-filter-people {
+            grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
+        }
+
+        .analytics-filter-field {
+            min-width: 0;
+        }
+
         .filter-card label {
+            display: block;
             font-weight: 600;
-            color: #333;
+            color: #465163;
             margin-bottom: 8px;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
         }
         
         .form-control {
@@ -158,25 +200,171 @@ $default_date_end = date('Y-m-d');
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.1);
         }
 
-        /* ... existing styles ... */
+        .filter-card .form-control,
+        #filterForm .select2-selection {
+            width: 100%;
+            min-width: 0;
+            height: 44px;
+            border: 1px solid #b9c2ce;
+            border-radius: 8px;
+            background-color: #fff;
+            color: #263244;
+            font-size: 0.875rem;
+            box-shadow: none;
+            transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+        }
 
-        
-        .btn-search {
-            background: var(--gradient-red);
+        .filter-card .form-control {
+            padding: 8px 12px;
+        }
+
+        .filter-card select.form-control {
+            padding-right: 32px;
+        }
+
+        .filter-card .form-control:disabled,
+        #filterForm .select2-container--disabled .select2-selection {
+            color: #596579;
+            background-color: #f1f3f6;
+            border-color: #d5dbe3;
+        }
+
+        #filterForm .select2-container {
+            width: 100% !important;
+            min-width: 0;
+        }
+
+        #filterForm .select2-selection--single .select2-selection__rendered {
+            line-height: 42px;
+            padding-left: 12px;
+            padding-right: 36px;
+            color: #263244;
+        }
+
+        #filterForm .select2-selection--single .select2-selection__arrow {
+            height: 42px;
+            right: 8px;
+        }
+
+        #filterForm .select2-selection__placeholder,
+        #filterForm .select2-search__field::placeholder {
+            color: #596579;
+        }
+
+        #filterForm .select2-selection--multiple {
+            min-height: 44px;
+            height: auto;
+            padding: 4px 28px 4px 4px;
+            position: relative;
+        }
+
+        #filterForm .select2-selection--multiple .select2-selection__choice {
+            max-width: 100%;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            background-color: #f1f3f6;
+            border: 1px solid #d5dbe3;
+            border-radius: 4px;
+            margin: 2px 4px 2px 0;
+            line-height: 26px;
+        }
+
+        #filterForm .select2-selection--multiple .select2-selection__clear {
+            position: absolute;
+            top: 8px;
+            right: 4px;
+            margin: 0;
+            width: 24px;
+            height: 28px;
+            color: #596579;
+        }
+
+        #filterForm .select2-search--inline .select2-search__field {
+            height: 28px;
+            line-height: 28px;
+            margin-top: 2px;
+            margin-left: 4px;
+            font-family: inherit;
+            font-size: 0.875rem;
+        }
+
+        .filter-card .form-control:focus,
+        #filterForm .select2-container--focus .select2-selection,
+        #filterForm .select2-container--open .select2-selection {
+            border-color: #c42737;
+            box-shadow: 0 0 0 3px rgba(196, 39, 55, 0.12);
+            outline: none;
+        }
+
+        .filter-help {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            color: #596579;
+        }
+
+        .analytics-filter-actions {
+            display: flex;
+            justify-content: flex-end;
+            padding: 16px 0;
+            border-top: 1px solid #e7eaf0;
+        }
+
+        .filter-card .btn-search {
+            background: #c42737;
             border: none;
-            padding: 10px 25px;
-            border-radius: 25px;
+            min-height: 44px;
+            padding: 10px 24px;
+            border-radius: 8px;
             font-weight: 600;
             color: white;
-            transition: all 0.3s;
+            transition: background-color 150ms ease-out;
         }
-        
-        .btn-search:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-hover);
-            color: white;
+
+        .filter-card .btn-search:hover {
+            background: #a82130;
         }
-        
+
+        .filter-card .btn-search:focus {
+            box-shadow: 0 0 0 3px rgba(196, 39, 55, 0.16);
+        }
+
+        .filter-card .btn-search:focus-visible,
+        #filterForm .select2-selection__choice__remove:focus-visible,
+        #filterForm .select2-selection__clear:focus-visible {
+            outline: 2px solid #a82130;
+            outline-offset: 3px;
+        }
+
+        @media (max-width: 1099px) {
+            .analytics-filter-section { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+            .analytics-filter-people { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 767px) {
+            .content-container { padding: 0 16px; }
+            .filter-card { padding: 0 16px; }
+            .analytics-filter-section { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 20px 0; }
+            .analytics-filter-time { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .analytics-filter-branch { grid-column: 1 / -1; }
+            .dashboard-header .d-flex { flex-wrap: wrap; gap: 12px; }
+            .dashboard-header h2 { font-size: 1.3rem; }
+            .dashboard-header .btn-back { font-size: 0.875rem; padding: 8px 12px; }
+        }
+
+        @media (max-width: 479px) {
+            .analytics-filter-location,
+            .analytics-filter-people { grid-template-columns: minmax(0, 1fr); }
+            .analytics-filter-actions .btn-search { width: 100%; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .filter-card .form-control,
+            #filterForm .select2-selection,
+            .filter-card .btn-search { transition: none; }
+        }
+
         .btn-reset {
             background: #6c757d;
             border: none;
@@ -428,70 +616,91 @@ $default_date_end = date('Y-m-d');
         <!-- Filter -->
         <div class="filter-card">
             <form id="filterForm">
-                <div class="row">
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <label><i class="fas fa-calendar-alt mr-1"></i>วันที่เริ่มต้น</label>
-                        <input type="date" class="form-control" id="date_start" value="<?php echo $default_date_start; ?>">
+                <section class="analytics-filter-section" aria-labelledby="filter_time_heading">
+                    <h3 id="filter_time_heading">ช่วงเวลาและสาขา</h3>
+                    <div class="analytics-filter-fields analytics-filter-time">
+                        <div class="analytics-filter-field">
+                            <label for="date_start">วันที่เริ่มต้น</label>
+                            <input type="date" class="form-control" id="date_start" value="<?php echo $default_date_start; ?>">
+                        </div>
+                        <div class="analytics-filter-field">
+                            <label for="date_end">วันที่สิ้นสุด</label>
+                            <input type="date" class="form-control" id="date_end" value="<?php echo $default_date_end; ?>">
+                        </div>
+                        <?php if (user_can_filter_all_origins()): ?>
+                        <div class="analytics-filter-field analytics-filter-branch">
+                            <label for="transport_origin">สาขาต้นทาง</label>
+                            <select class="form-control" id="transport_origin">
+                                <option value="">ทุกสาขา</option>
+                                <?php foreach ($transport_origins as $origin): ?>
+                                    <option value="<?php echo $origin['transport_origin_id']; ?>">
+                                        <?php echo htmlspecialchars($origin['origin_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <?php endif; ?>
                     </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <label><i class="fas fa-calendar-alt mr-1"></i>วันที่สิ้นสุด</label>
-                        <input type="date" class="form-control" id="date_end" value="<?php echo $default_date_end; ?>">
-                    </div>
-                    <?php if (user_can_filter_all_origins()): ?>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <label><i class="fas fa-building mr-1"></i>สาขา</label>
-                        <select class="form-control" id="transport_origin">
-                            <option value="">ทุกสาขา</option>
-                            <?php foreach ($transport_origins as $origin): ?>
-                                <option value="<?php echo $origin['transport_origin_id']; ?>">
-                                    <?php echo htmlspecialchars($origin['origin_name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <?php endif; ?>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <label><i class="fas fa-map-marker-alt mr-1"></i>จังหวัด</label>
-                        <select class="form-control" id="transport_province">
-                            <option value="">ทุกจังหวัด</option>
-                            <?php foreach ($provinces as $province): ?>
-                                <option value="<?php echo htmlspecialchars($province); ?>">
-                                    <?php echo htmlspecialchars($province); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
+                </section>
+
+                <section class="analytics-filter-section" aria-labelledby="filter_location_heading">
+                    <h3 id="filter_location_heading">พื้นที่จัดส่ง</h3>
+                    <div class="analytics-filter-fields analytics-filter-location">
+                        <div class="analytics-filter-field">
+                            <label for="transport_province">จังหวัด</label>
+                            <select class="form-control" id="transport_province">
+                                <option value="">ทุกจังหวัด</option>
+                                <?php foreach ($provinces as $province): ?>
+                                    <option value="<?php echo htmlspecialchars($province); ?>">
+                                        <?php echo htmlspecialchars($province); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     
-                    <!-- Row 2 Filters -->
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <label><i class="fas fa-map-pin mr-1"></i>อำเภอ</label>
-                        <select class="form-control" id="filter_amphoe" disabled>
-                            <option value="">ทุกอำเภอ</option>
-                        </select>
+                        <div class="analytics-filter-field">
+                            <label for="filter_amphoe">อำเภอ</label>
+                            <select class="form-control" id="filter_amphoe" disabled aria-describedby="filter_amphoe_help">
+                                <option value="">ทุกอำเภอ</option>
+                            </select>
+                            <small id="filter_amphoe_help" class="filter-help">อำเภอจะแสดงตามจังหวัดที่เลือก</small>
+                        </div>
                     </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <label><i class="fas fa-truck mr-1"></i>ประเภทรถ</label>
-                        <select class="form-control" id="filter_vehicle_type">
-                            <option value="">กำลังโหลด...</option>
-                        </select>
+                </section>
+
+                <section class="analytics-filter-section" aria-labelledby="filter_people_heading">
+                    <h3 id="filter_people_heading">บุคคลและการจัดส่ง</h3>
+                    <div class="analytics-filter-fields analytics-filter-people">
+                        <div class="analytics-filter-field">
+                            <label id="filter_salesman_label" for="filter_salesman">พนักงานผู้เปิดบิล</label>
+                            <select class="form-control" id="filter_salesman" name="salesman_codes[]" multiple disabled aria-describedby="filter_salesman_help"></select>
+                            <small id="filter_salesman_help" class="filter-help" role="status">กำลังโหลดรายชื่อพนักงาน...</small>
+                        </div>
+                        <div class="analytics-filter-field">
+                            <label id="filter_customer_label" for="filter_customer">ลูกค้า</label>
+                            <select class="form-control" id="filter_customer">
+                                <option value="">ลูกค้าทั้งหมด</option>
+                            </select>
+                        </div>
+                        <div class="analytics-filter-field">
+                            <label for="filter_vehicle_type">ประเภทรถ</label>
+                            <select class="form-control" id="filter_vehicle_type">
+                                <option value="">กำลังโหลด...</option>
+                            </select>
+                        </div>
+                        <div class="analytics-filter-field">
+                            <label for="filter_driver">คนขับ</label>
+                            <select class="form-control" id="filter_driver">
+                                <option value="">กำลังโหลด...</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <label><i class="fas fa-user-circle mr-1"></i>คนขับ</label>
-                        <select class="form-control" id="filter_driver">
-                            <option value="">กำลังโหลด...</option>
-                        </select>
-                    </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <label><i class="fas fa-user mr-1"></i>ลูกค้า</label>
-                        <select class="form-control" id="filter_customer">
-                            <option value="">ลูกค้าทั้งหมด</option>
-                        </select>
-                    </div>
-                    <div class="col-lg-3 col-md-6 mb-3 d-flex align-items-end">
-                        <button type="submit" class="btn btn-search btn-block">
-                            <i class="fas fa-search mr-1"></i>ค้นหา / กรอง
-                        </button>
-                    </div>
+                </section>
+
+                <div class="analytics-filter-actions">
+                    <button type="submit" class="btn btn-search">
+                        <i class="fas fa-filter mr-2" aria-hidden="true"></i>กรองข้อมูล
+                    </button>
                 </div>
             </form>
         </div>
@@ -669,6 +878,7 @@ $default_date_end = date('Y-m-d');
                 top_n: $('#topNSelect').val() || 10,
                 customer: $('#filter_customer').val() || ''
             });
+            ($('#filter_salesman').val() || []).forEach(code => params.append('salesman_codes[]', code));
 
             showLoading();
 
@@ -706,13 +916,25 @@ $default_date_end = date('Y-m-d');
                         response.data.drivers.forEach(d => dHtml += `<option value="${d.staff_id}">${d.staff_name}</option>`);
                     }
                     $('#filter_driver').html(dHtml);
+
+                    const salesmanSelect = $('#filter_salesman').empty();
+                    (response.data.salesmen || []).forEach(salesman => {
+                        salesmanSelect.append(new Option(salesman.lname + ' (' + salesman.code + ')', salesman.code));
+                    });
+                    salesmanSelect.prop('disabled', false).trigger('change.select2');
+                    $('#filter_salesman_help').text('เลือกได้หลายคน · ไม่เลือก = ทุกคน');
+                } else {
+                    $('#filter_salesman_help').text('โหลดรายชื่อไม่สำเร็จ กรุณาโหลดหน้าใหม่');
                 }
+            }).fail(function() {
+                $('#filter_salesman_help').text('โหลดรายชื่อไม่สำเร็จ กรุณาโหลดหน้าใหม่');
             });
         }
 
         function initCustomerSelect2() {
             $('#filter_customer').select2({
-                theme: 'bootstrap4',
+                theme: 'default',
+                width: '100%',
                 placeholder: 'ค้นหาลูกค้า...',
                 allowClear: true,
                 minimumInputLength: 0,
@@ -734,6 +956,7 @@ $default_date_end = date('Y-m-d');
                     cache: true
                 }
             });
+            $('#filter_customer').next('.select2').find('.select2-selection').attr('aria-labelledby', 'filter_customer_label');
             // Trigger fetchAnalytics on customer change
             $('#filter_customer').on('change', function() { fetchAnalytics(); });
         }
@@ -951,6 +1174,18 @@ $default_date_end = date('Y-m-d');
         }
 
         $(document).ready(function() {
+            $('#filter_salesman').select2({
+                theme: 'default',
+                width: '100%',
+                placeholder: 'ค้นหาและเลือกพนักงาน...',
+                allowClear: true,
+                closeOnSelect: false
+            });
+            $('#filter_salesman').next('.select2').find('.select2-selection').attr({
+                'aria-labelledby': 'filter_salesman_label',
+                'aria-describedby': 'filter_salesman_help'
+            });
+            $('#filter_salesman').next('.select2').find('.select2-search__field').attr('aria-label', 'ค้นหาพนักงานผู้เปิดบิล');
             fetchAnalytics();
             loadFilterOptions();
             initCustomerSelect2();

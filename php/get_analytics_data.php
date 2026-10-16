@@ -109,11 +109,31 @@ if ($action === 'get_filter_options') {
         $drivers[] = $row;
     }
 
+    $salesmen_sql = "SELECT c.code, MAX(c.lname) AS lname
+                     FROM orders o
+                     INNER JOIN cssale c ON o.cssale_docno = c.docno
+                     WHERE c.code IS NOT NULL AND TRIM(c.code) != ''
+                       AND c.lname IS NOT NULL AND TRIM(c.lname) != ''";
+    $salesmen_params = [];
+    $salesmen_types = '';
+    if (should_limit_to_assigned_origin()) {
+        $salesmen_sql .= ' AND o.transport_origin_id = ?';
+        $salesmen_params[] = (int) current_assigned_transport_origin_id();
+        $salesmen_types = 'i';
+    }
+    $salesmen_sql .= ' GROUP BY c.code ORDER BY lname, c.code';
+    $salesmen_result = run_prepared_query($conn, $salesmen_sql, $salesmen_types, $salesmen_params);
+    $salesmen = [];
+    while ($salesmen_result && ($row = $salesmen_result->fetch_assoc())) {
+        $salesmen[] = $row;
+    }
+
     echo json_encode([
         'status' => 'success',
         'data' => [
             'vehicle_types' => $vehicle_types,
-            'drivers' => $drivers
+            'drivers' => $drivers,
+            'salesmen' => $salesmen
         ]
     ], JSON_UNESCAPED_UNICODE);
     $conn->close();
@@ -139,6 +159,20 @@ try {
     $filter_vehicle_type = isset($_GET['vehicle_type']) ? trim($_GET['vehicle_type']) : '';
     $filter_driver_id = isset($_GET['driver_id']) && $_GET['driver_id'] !== '' ? (int) $_GET['driver_id'] : 0;
     $filter_customer = isset($_GET['customer']) ? trim($_GET['customer']) : '';
+    $filter_salesman_codes = $_GET['salesman_codes'] ?? [];
+    if (!is_array($filter_salesman_codes)) {
+        throw new InvalidArgumentException('รูปแบบตัวกรองพนักงานผู้เปิดบิลไม่ถูกต้อง');
+    }
+    foreach ($filter_salesman_codes as &$code) {
+        if (!is_string($code)) {
+            throw new InvalidArgumentException('รูปแบบรหัสพนักงานผู้เปิดบิลไม่ถูกต้อง');
+        }
+        $code = trim($code);
+    }
+    unset($code);
+    $filter_salesman_codes = array_values(array_unique(array_filter($filter_salesman_codes, static function ($code) {
+        return $code !== '';
+    })));
     $top_n = isset($_GET['top_n']) && is_numeric($_GET['top_n']) ? (int) $_GET['top_n'] : 10;
     if (!in_array($top_n, [10, 20, 30, 40, 50], true)) {
         $top_n = 10;
@@ -190,6 +224,13 @@ try {
         $where_conditions[] = 'c.custname = ?';
         $params[] = $filter_customer;
         $param_types .= 's';
+    }
+
+    if ($filter_salesman_codes !== []) {
+        $placeholders = implode(',', array_fill(0, count($filter_salesman_codes), '?'));
+        $where_conditions[] = 'c.code IN (' . $placeholders . ')';
+        $params = array_merge($params, $filter_salesman_codes);
+        $param_types .= str_repeat('s', count($filter_salesman_codes));
     }
 
     $sql_from = " FROM orders o
